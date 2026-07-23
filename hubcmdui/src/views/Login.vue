@@ -79,7 +79,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, Lock, Key, Loading, Warning } from '@element-plus/icons-vue'
 import { getCaptcha, login, checkSession } from '../services'
 import { useAuth } from '../composables/useAuth'
@@ -135,6 +135,51 @@ async function onSubmit() {
       // 这里不能依赖 router.replace('/admin') —— 当用户已经在 /admin 时
       // replace 同一路径不会触发任何变化，Login 会一直停留在屏幕。
       await refresh()
+
+      // 使用默认密码登录：弹出安全警告，引导用户尽快修改
+      if (data.requireChangePassword) {
+        await ElMessageBox.confirm(
+          `<div class="security-msg">
+            <div class="security-msg-icon">
+              <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <h3 class="security-msg-title">安全警告</h3>
+            <p class="security-msg-subtitle">检测到您正在使用系统默认密码登录</p>
+            <div class="security-msg-card">
+              <div class="security-msg-row">
+                <span class="security-msg-label">默认账号</span>
+                <span class="security-msg-value">root</span>
+              </div>
+              <div class="security-msg-row">
+                <span class="security-msg-label">默认密码</span>
+                <span class="security-msg-value">admin@123</span>
+              </div>
+            </div>
+            <p class="security-msg-desc">
+              继续使用默认密码意味着任何人都可以通过公开渠道获得该凭据并登录您的管理后台，存在严重安全风险。建议您立即修改为强密码。
+            </p>
+          </div>`,
+          '',
+          {
+            dangerouslyUseHTMLString: true,
+            customClass: 'security-message-box',
+            confirmButtonText: '前往修改密码',
+            cancelButtonText: '稍后再说',
+            confirmButtonClass: 'security-confirm-btn',
+            cancelButtonClass: 'security-cancel-btn',
+            closeOnClickModal: false,
+            closeOnPressEscape: false,
+            showClose: false
+          }
+        ).then(() => {
+          router.push({ name: 'user' })
+        }).catch(() => {})
+      }
+
       // 通知父级处理跳转到具体子路由（如果 intended 不在 /admin 本身）
       emit('logged-in')
     } else {
@@ -399,4 +444,5 @@ onMounted(async () => {
   color: #34c759;
   font-size: 13px;
 }
+
 </style>

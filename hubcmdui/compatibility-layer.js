@@ -526,13 +526,20 @@ module.exports = function(app) {
         return res.status(401).json({ error: '用户名或密码错误' });
       }
 
+      // 判断是否仍使用系统默认密码（admin@123），用于前端登录后安全提醒
+      let requireChangePassword = false;
+      try {
+        const bcrypt = require('bcrypt');
+        requireChangePassword = await bcrypt.compare('admin@123', user.password);
+      } catch (_) { /* 判断失败则按非默认处理，避免阻断登录 */ }
+
       req.session.user = { username: user.username };
       
       // 更新用户登录信息
       await userServiceDB.updateUserLoginInfo(username);
       
       logger.info(`User ${username} logged in successfully`);
-      res.json({ success: true });
+      res.json({ success: true, requireChangePassword });
     } catch (error) {
       logger.error('登录失败:', error);
       res.status(500).json({ error: '登录处理失败', details: error.message });

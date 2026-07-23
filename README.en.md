@@ -48,8 +48,12 @@
 - [x] **Optional reverse proxy**: Automatically deploys Nginx or Caddy as a reverse proxy and renders the corresponding configuration (HTTPS, Host rewriting).
 - [x] **Upstream account authentication**: You can configure an upstream username/password; the proxy server exchanges them for a Bearer Token, enabling pulls of private Docker Hub images and mitigating official rate limits.
 - [x] **HubCMD-UI management panel**: Manage proxies, configure server parameters, and hot-reload directly from the web UI; includes image search, documentation tutorials, container management, monitoring, and alerting.
+- [x] **System Dashboard**: Real-time monitoring of server resources, container runtime status, and network traffic information
 - [x] **Cross-platform images**: Supports deployment on mainstream architectures such as `linux/amd64` and `linux/arm64`.
 - [x] **Daily operations management**: Provides full lifecycle management including service start / stop / restart / logs / update / uninstall.
+- [x] **Traffic Monitoring and Alerts**: Provides detailed client-side traffic metrics for server bandwidth throughput and image pull operations, along with threshold-based monitoring and alerting.
+- [x] **Registry Management**: Each registry has independent configuration management, enabling online management of image proxies (registries) and service settings without the need to manually edit configuration files.
+
 
 ## 📦 Deployment
 
@@ -93,7 +97,7 @@ The config file is mounted on the host at `./config/go-proxy/` (inside the conta
 
 ## 💻 Hubcmd-UI
 
-**Default account**: root / admin@123
+**Default account**: root / admin@123   **Please change the default account and password promptly after deployment.**
 
 <br/>
 <table>

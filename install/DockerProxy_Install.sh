@@ -5,7 +5,7 @@
 # 
 #         USAGE: ./DockerProxy_Install.sh
 #
-#   DESCRIPTION: 自建Docker镜像加速服务，基于官方 registry 一键部署Docker、K8s、Quay、Ghcr、Nvcr镜像加速\管理服务.支持免服务器部署到Render.
+#   DESCRIPTION: 自建Docker镜像加速服务，零磁盘缓存，流量监控告警等功能。一键部署Docker、K8s、Quay、Ghcr、Nvcr镜像加速\管理服务.支持免服务器部署到Render.
 # 
 #  ORGANIZATION: DingQz dqzboy.com 浅时光博客
 #===============================================================================
