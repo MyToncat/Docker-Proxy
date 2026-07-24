@@ -118,12 +118,20 @@ bash -c "$(curl -fsSL https://ghp.ci/https://raw.githubusercontent.com/dqzboy/Do
         <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-registry-manager.png?raw=true"></td>
     </tr>
     <tr>
-      <td width="50%" align="center"><b>容器管理</b></td>
+      <td width="50%" align="center"><b>系统看板</b></td>
       <td width="50%" align="center"><b>流量监控</b></td>
     </tr>
     <tr>
-        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-docker-manager.png?raw=true"></td>
+        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmd-ui-dashboard.png?raw=true"></td>
         <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-Traffic.png?raw=true"></td>
+    </tr>
+    <tr>
+      <td width="50%" align="center"><b>访问控制</b></td>
+      <td width="50%" align="center"><b>网络测试</b></td>
+    </tr>
+    <tr>
+        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmd-ui-ipaccess.png?raw=true"></td>
+        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-network-test.png?raw=true"></td>
     </tr>
 </table>
 

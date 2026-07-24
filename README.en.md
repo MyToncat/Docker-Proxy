@@ -118,12 +118,20 @@ The config file is mounted on the host at `./config/go-proxy/` (inside the conta
         <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-registry-manager.png?raw=true"></td>
     </tr>
     <tr>
-      <td width="50%" align="center"><b>Container Management</b></td>
-      <td width="50%" align="center"><b>Traffic monitoring</b></td>
+      <td width="50%" align="center"><b>System Dashboard</b></td>
+      <td width="50%" align="center"><b>Traffic Monitoring</b></td>
     </tr>
     <tr>
-        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-docker-manager.png?raw=true"></td>
+        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmd-ui-dashboard.png?raw=true"></td>
         <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-Traffic.png?raw=true"></td>
+    </tr>
+    <tr>
+      <td width="50%" align="center"><b>Access Control</b></td>
+      <td width="50%" align="center"><b>Network Testing</b></td>
+    </tr>
+    <tr>
+        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmd-ui-ipaccess.png?raw=true"></td>
+        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-network-test.png?raw=true"></td>
     </tr>
 </table>
 
