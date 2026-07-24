@@ -17,7 +17,9 @@ async function refresh() {
     checking = true
     try {
       const res = await checkSession()
-      authed.value = !!(res && res.authenticated)
+      // 后端 /api/check-session 实际返回 { success: true|false, ... },这里以前误读为 res.authenticated
+      // 字段不存在导致 authed 永远是 false,登录后 AdminShell 无法切到 AdminLayout
+      authed.value = !!(res && res.success)
     } catch (e) {
       authed.value = false
     } finally {

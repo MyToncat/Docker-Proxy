@@ -65,7 +65,7 @@ async function initializeSystem() {
     console.log(chalk.green('\n✅ 系统初始化完成！'));
     console.log(chalk.cyan('💡 使用 npm start 启动服务'));
     console.log(chalk.cyan('🌐 默认访问地址: http://localhost:3000'));
-    console.log(chalk.cyan('👤 默认用户: root / admin@123'));
+    console.log(chalk.cyan('👤 默认用户: root（请尽快修改默认密码）'));
 
   } catch (error) {
     console.error(chalk.red('❌ 初始化失败:'), error.message);
@@ -173,7 +173,7 @@ PROXY_HOST=0.0.0.0
  * 创建默认用户 - 简化版，数据库已处理
  */
 async function createDefaultUser() {
-  console.log(chalk.green('  ✓ 默认管理员用户由数据库处理 (root/admin@123)'));
+  console.log(chalk.green('  ✓ 默认管理员用户由数据库处理 (root)'));
 }
 
 /**

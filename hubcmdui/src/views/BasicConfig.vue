@@ -2,8 +2,8 @@
   <div class="page page-config">
     <div class="page-head">
       <div>
-        <h2>基本配置</h2>
-        <p class="muted">配置前台 Logo 与各 Registry 平台的启用 / 代理地址</p>
+        <h2>{{ t('basic.title') }}</h2>
+        <p class="muted">{{ t('basic.subtitle') }}</p>
       </div>
     </div>
 
@@ -14,11 +14,11 @@
           <el-icon><Picture /></el-icon>
         </div>
         <div style="flex: 1;">
-          <div class="section-title">Logo 设置</div>
-          <div class="muted">自定义系统 Logo 图片（前台 / 后台头部展示）</div>
+          <div class="section-title">{{ t('basic.logoSectionTitle') }}</div>
+          <div class="muted">{{ t('basic.logoSectionDesc') }}</div>
         </div>
         <el-button type="primary" :loading="loadingLogo" @click="onSaveLogo">
-          <el-icon><Check /></el-icon> 保存 Logo
+          <el-icon><Check /></el-icon> {{ t('basic.saveLogo') }}
         </el-button>
       </div>
 
@@ -26,11 +26,11 @@
         <el-form-item label="Logo URL">
           <el-input
             v-model="logoForm.logoUrl"
-            placeholder="请输入 Logo 图片 URL（可选）"
+            :placeholder="t('basic.logoUrlPlaceholder')"
             clearable
           />
         </el-form-item>
-        <div class="muted small">支持 PNG、JPG、SVG 格式的图片链接</div>
+        <div class="muted small">{{ t('basic.logoFormatHint') }}</div>
         <div v-if="logoForm.logoUrl" class="logo-preview">
           <img :src="logoForm.logoUrl" alt="logo preview" @error="onLogoError" />
         </div>
@@ -44,8 +44,8 @@
           <el-icon><Files /></el-icon>
         </div>
         <div style="flex: 1;">
-          <div class="section-title">Registry 平台配置</div>
-          <div class="muted">每个 Registry 独立配置并独立保存；启用时必须填写代理地址</div>
+          <div class="section-title">{{ t('basic.registrySectionTitle') }}</div>
+          <div class="muted">{{ t('basic.registrySectionDesc') }}</div>
         </div>
       </div>
 
@@ -68,7 +68,7 @@
             </div>
             <div class="reg-status" :class="r.enabled ? 'on' : 'off'">
               <span class="dot"></span>
-              <span>{{ r.enabled ? '已启用' : '已禁用' }}</span>
+              <span>{{ r.enabled ? t('basic.statusEnabled') : t('basic.statusDisabled') }}</span>
             </div>
           </div>
 
@@ -76,7 +76,7 @@
 
           <!-- 启用开关 -->
           <div class="reg-row">
-            <span class="row-label">启用</span>
+            <span class="row-label">{{ t('common.enabled') }}</span>
             <el-switch
               v-model="r.enabled"
               :active-color="r.color || '#22c55e'"
@@ -85,23 +85,23 @@
             />
           </div>
           <div v-if="!r.enabled && !r.proxyUrl" class="row-hint warn">
-            <i class="fas fa-exclamation-triangle"></i> 请先填写代理地址，再启用
+            <i class="fas fa-exclamation-triangle"></i> {{ t('basic.fillProxyFirst') }}
           </div>
 
           <!-- 代理地址 -->
           <div class="reg-row">
             <span class="row-label">
-              代理地址
-              <el-tag size="small" type="danger" effect="plain" class="req-tag">必填</el-tag>
+              {{ t('basic.proxyAddress') }}
+              <el-tag size="small" type="danger" effect="plain" class="req-tag">{{ t('common.required') }}</el-tag>
             </span>
           </div>
           <el-input
             v-model="r.proxyUrl"
-            :placeholder="`例如：${r.registryId}.proxy.example.com`"
+            :placeholder="t('basic.proxyPlaceholder', { id: r.registryId })"
             clearable
             class="reg-input"
           />
-          <div class="row-hint">填写此 Registry 的代理服务地址</div>
+          <div class="row-hint">{{ t('basic.proxyHint') }}</div>
 
           <!-- 卡片底部：独立保存按钮 -->
           <div class="reg-foot">
@@ -112,10 +112,10 @@
               @click="onSaveOne(r)"
               class="save-btn"
             >
-              <el-icon><Check /></el-icon> 保存
+              <el-icon><Check /></el-icon> {{ t('common.save') }}
             </el-button>
             <span v-if="!r.proxyUrl" class="empty-warn">
-              <i class="fas fa-info-circle"></i> 代理地址为空
+              <i class="fas fa-info-circle"></i> {{ t('basic.proxyEmpty') }}
             </span>
           </div>
         </div>
@@ -126,6 +126,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Picture, Check, Box, Files } from '@element-plus/icons-vue'
 import {
@@ -134,6 +135,8 @@ import {
   getRegistryConfigs,
   updateRegistryConfig
 } from '../services'
+
+const { t } = useI18n()
 
 const logoForm = ref({ logoUrl: '' })
 const registries = ref([])
@@ -162,7 +165,7 @@ async function loadRegistries() {
       enabled: !!r.enabled
     }))
   } catch (e) {
-    ElMessage.warning('加载 Registry 失败：' + (e.response?.data?.error || e.message))
+    ElMessage.warning(t('basic.loadRegistryFailed', { msg: e.response?.data?.error || e.message }))
   } finally {
     loadingReg.value = false
   }
@@ -179,16 +182,16 @@ function onToggle(r, val) {
   if (val && (!r.proxyUrl || !r.proxyUrl.trim())) {
     r.enabled = false
     ElMessageBox.alert(
-      `请先填写「${r.name}」的代理地址，然后再启用该 Registry。`,
-      '无法启用',
-      { type: 'warning', confirmButtonText: '我知道了' }
+      t('basic.enableAlertMsg', { name: r.name }),
+      t('basic.cannotEnable'),
+      { type: 'warning', confirmButtonText: t('common.gotIt') }
     )
   }
 }
 
 function onLogoError(e) {
   e.target.style.display = 'none'
-  ElMessage.warning('Logo 图片加载失败，请检查 URL')
+  ElMessage.warning(t('basic.logoLoadFailed'))
 }
 
 async function onSaveLogo() {
@@ -197,9 +200,9 @@ async function onSaveLogo() {
     const cfg = await getConfig().catch(() => ({}))
     const next = { ...(cfg || {}), logo: logoForm.value.logoUrl || '' }
     await saveConfig(next)
-    ElMessage.success('Logo 已保存')
+    ElMessage.success(t('basic.logoSaved'))
   } catch (e) {
-    ElMessage.error('保存失败：' + (e.response?.data?.error || e.message))
+    ElMessage.error(t('basic.saveFailed', { msg: e.response?.data?.error || e.message }))
   } finally {
     loadingLogo.value = false
   }
@@ -209,9 +212,9 @@ async function onSaveOne(r) {
   // 防御性校验：地址为空时弹窗拒绝
   if (!r.proxyUrl || !r.proxyUrl.trim()) {
     ElMessageBox.alert(
-      `「${r.name}」的代理地址为空，请填写后再保存。`,
-      '无法保存',
-      { type: 'warning', confirmButtonText: '我知道了' }
+      t('basic.saveAlertMsg', { name: r.name }),
+      t('basic.cannotSave'),
+      { type: 'warning', confirmButtonText: t('common.gotIt') }
     )
     return
   }
@@ -221,9 +224,9 @@ async function onSaveOne(r) {
       enabled: !!r.enabled,
       proxyUrl: r.proxyUrl.trim()
     })
-    ElMessage.success(`「${r.name}」已保存`)
+    ElMessage.success(t('basic.savedWithName', { name: r.name }))
   } catch (e) {
-    ElMessage.error('保存失败：' + (e.response?.data?.error || e.message))
+    ElMessage.error(t('basic.saveFailed', { msg: e.response?.data?.error || e.message }))
   } finally {
     savingId.value = null
   }
@@ -272,17 +275,31 @@ onMounted(() => {
 .reg-card.disabled { opacity: 0.75; }
 .reg-card.no-proxy { border-style: dashed; }
 
-.reg-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.reg-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
 .reg-icon {
   width: 42px; height: 42px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   color: #fff; font-size: 22px; flex-shrink: 0;
 }
 .reg-meta { flex: 1; min-width: 0; }
-.reg-name { font-weight: 600; color: var(--fg); font-size: 14px; line-height: 1.2; }
+.reg-name {
+  font-weight: 600; color: var(--fg); font-size: 14px; line-height: 1.2;
+  /* 统一卡片头高度：所有名称统一占用 2 行空间，1 行名字用 min-height 顶到 2 行 */
+  min-height: calc(14px * 1.2 * 2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
 .reg-domain { color: var(--muted); font-size: 12px; margin-top: 2px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
 
-.reg-status { display: flex; align-items: center; gap: 4px; font-size: 12px; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; }
+.reg-status {
+  display: flex; align-items: center; gap: 4px; font-size: 12px;
+  padding: 2px 8px; border-radius: 999px; flex-shrink: 0;
+  /* 状态徽章与图标顶部对齐，不再随名称行数上下浮动 */
+  margin-top: 2px;
+}
 .reg-status .dot { width: 6px; height: 6px; border-radius: 50%; }
 .reg-status.on { background: rgba(34, 197, 94, .12); color: #4ade80; }
 .reg-status.on .dot { background: #4ade80; box-shadow: 0 0 6px #4ade80; }

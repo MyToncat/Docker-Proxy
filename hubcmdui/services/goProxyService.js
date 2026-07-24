@@ -74,6 +74,18 @@ class GoProxyService {
       return { reachable: false, error: e.message };
     }
   }
+
+  /**
+   * 获取按客户端 IP 的流量统计（聚合自 go-proxy 内存计数）
+   * 返回 { clients: [{ ip, bytesTotal, requests, lastSeen, byRegistry }] }
+   */
+  async getStats() {
+    const { data } = await axios.get(`${ADMIN_BASE}/-/stats`, {
+      headers: adminHeaders(),
+      timeout: 8000
+    });
+    return data;
+  }
 }
 
 // 把 axios 错误转换成可返回给前端的错误体，并附带当前 admin 地址

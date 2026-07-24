@@ -23,9 +23,11 @@ const routes = [
       { path: 'basic', name: 'basic', component: () => import('../views/BasicConfig.vue') },
       { path: 'docker', name: 'docker', component: () => import('../views/Docker.vue') },
       { path: 'goproxy', name: 'goproxy', component: () => import('../views/GoProxy.vue') },
+      { path: 'ipaccess', name: 'ipaccess', component: () => import('../views/IpAccess.vue') },
       { path: 'documents', name: 'documents', component: () => import('../views/Documents.vue') },
       { path: 'menu', name: 'menu', component: () => import('../views/Menu.vue') },
       { path: 'network', name: 'network', component: () => import('../views/NetworkTest.vue') },
+      { path: 'traffic', name: 'traffic', component: () => import('../views/NetworkTraffic.vue') },
       { path: 'monitoring', name: 'monitoring', component: () => import('../views/Monitoring.vue') },
       { path: 'user', name: 'user', component: () => import('../views/UserCenter.vue') }
     ]

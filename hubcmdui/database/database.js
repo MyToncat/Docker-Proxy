@@ -134,6 +134,16 @@ class Database {
       )`,
       `CREATE INDEX IF NOT EXISTS idx_metric_history_ts ON metric_history(ts)`,
 
+      // 网络流量历史表 - 每 30s 记录一次全网卡累计 rx/tx 字节（非回环），
+      // 用于「网络流量监控」页绘制历史吞吐曲线（相邻点差分得到每秒速率）。
+      `CREATE TABLE IF NOT EXISTS network_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts INTEGER NOT NULL,
+        rx_bytes INTEGER,
+        tx_bytes INTEGER
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_network_history_ts ON network_history(ts)`,
+
       // Registry 凭证表 - 存储各 Registry 平台的访问凭证（username / password 或 PAT）
       // password 以 AES 加密存储，避免明文落库；仅供 token 获取流程内部解密使用。
       `CREATE TABLE IF NOT EXISTS registry_credentials (
@@ -222,7 +232,7 @@ class Database {
           'INSERT INTO users (username, password, created_at, login_count, last_login) VALUES (?, ?, ?, ?, ?)',
           ['root', hashedPassword, new Date().toISOString(), 0, null]
         );
-        logger.info('默认管理员用户创建成功: root/admin@123');
+        logger.info('默认管理员用户创建成功，请及时修改默认密码');
       }
     } catch (error) {
       logger.error('创建默认管理员用户失败:', error);

@@ -8,6 +8,11 @@ const os = require('os');
 const { exec } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
+const networkTestService = require('./services/networkTestService');
+const systemService = require('./services/systemService');
+const trafficService = require('./services/trafficService');
+const configServiceDB = require('./services/configServiceDB');
+const { generateCaptchaCode, verifyCaptcha, storeCaptcha, consumeCaptcha } = require('./lib/captcha');
 
 module.exports = function(app) {
   logger.info('加载API兼容层...');
@@ -33,14 +38,12 @@ module.exports = function(app) {
     }
   });
   
-  // 验证码接口
+  // 验证码接口（随机字母/数字，大小写不敏感）
   app.get('/api/captcha', (req, res) => {
     try {
-      const num1 = Math.floor(Math.random() * 10);
-      const num2 = Math.floor(Math.random() * 10);
-      const captcha = `${num1} + ${num2} = ?`;
-      req.session.captcha = num1 + num2;
-      res.json({ captcha });
+      const captcha = generateCaptchaCode(4);
+      const captchaId = storeCaptcha(captcha); // 与 session 解耦存储
+      res.json({ captcha, captchaId });
     } catch (error) {
       logger.error('生成验证码失败:', error);
       res.status(500).json({ error: '生成验证码失败' });
@@ -211,106 +214,63 @@ module.exports = function(app) {
     }
   });
   
-  // 监控配置接口
-  app.get('/api/monitoring-config', async (req, res) => {
+  // 监控配置接口（统一走 SQLite，与 monitoringService 同源）
+  app.get('/api/monitoring-config', requireLogin, async (req, res) => {
     try {
-      logger.info('兼容层处理监控配置请求');
-      const fs = require('fs').promises;
-      const path = require('path');
-      
-      // 监控配置文件路径
-      const CONFIG_FILE = path.join(__dirname, './config/monitoring.json');
-      
-      // 确保配置文件存在
-      try {
-        await fs.access(CONFIG_FILE);
-      } catch (err) {
-        // 文件不存在，创建默认配置
-        const defaultConfig = {
-          isEnabled: false,
-          notificationType: 'wechat',
-          webhookUrl: '',
-          telegramToken: '',
-          telegramChatId: '',
-          monitorInterval: 60
-        };
-        
-        await fs.mkdir(path.dirname(CONFIG_FILE), { recursive: true });
-        await fs.writeFile(CONFIG_FILE, JSON.stringify(defaultConfig, null, 2), 'utf8');
-        return res.json(defaultConfig);
-      }
-      
-      // 文件存在，读取配置
-      const data = await fs.readFile(CONFIG_FILE, 'utf8');
-      res.json(JSON.parse(data));
+      const config = await configServiceDB.getMonitoringConfig();
+      res.json(config);
     } catch (err) {
       logger.error('获取监控配置失败:', err);
       res.status(500).json({ error: '获取监控配置失败' });
     }
   });
   
-  // 保存监控配置接口
-  app.post('/api/monitoring-config', async (req, res) => {
+  // 保存监控配置接口（统一走 SQLite，与 monitoringService 同源）
+  app.post('/api/monitoring-config', requireLogin, async (req, res) => {
     try {
-      logger.info('兼容层处理保存监控配置请求');
-      const fs = require('fs').promises;
-      const path = require('path');
-      
-      const { 
-        notificationType, 
-        webhookUrl, 
-        telegramToken, 
-        telegramChatId, 
+      const {
+        notificationType,
+        webhookUrl,
+        telegramToken,
+        telegramChatId,
         monitorInterval,
-        isEnabled
+        isEnabled,
+        enableTrafficAlert,
+        rxRateThreshold,
+        txRateThreshold,
+        dailyTrafficThreshold,
+        singleIpDailyThreshold
       } = req.body;
-      
+
       // 简单验证
       if (notificationType === 'wechat' && !webhookUrl) {
         return res.status(400).json({ error: '企业微信通知需要设置 webhook URL' });
       }
-      
+
       if (notificationType === 'telegram' && (!telegramToken || !telegramChatId)) {
         return res.status(400).json({ error: 'Telegram 通知需要设置 Token 和 Chat ID' });
       }
-      
-      // 监控配置文件路径
-      const CONFIG_FILE = path.join(__dirname, './config/monitoring.json');
-      
-      // 确保配置文件存在
-      let config = {
-        isEnabled: false,
-        notificationType: 'wechat',
-        webhookUrl: '',
-        telegramToken: '',
-        telegramChatId: '',
-        monitorInterval: 60
-      };
-      
-      try {
-        const data = await fs.readFile(CONFIG_FILE, 'utf8');
-        config = JSON.parse(data);
-      } catch (err) {
-        // 如果读取失败，使用默认配置
-        logger.warn('读取监控配置失败，将使用默认配置:', err);
-      }
-      
-      // 更新配置
+
+      const currentConfig = await configServiceDB.getMonitoringConfig();
       const updatedConfig = {
-        ...config,
+        ...currentConfig,
         notificationType,
         webhookUrl: webhookUrl || '',
         telegramToken: telegramToken || '',
         telegramChatId: telegramChatId || '',
         monitorInterval: parseInt(monitorInterval, 10) || 60,
-        isEnabled: isEnabled !== undefined ? isEnabled : config.isEnabled
+        isEnabled: isEnabled !== undefined ? !!isEnabled : currentConfig.isEnabled,
+        enableTrafficAlert: enableTrafficAlert !== undefined ? !!enableTrafficAlert : currentConfig.enableTrafficAlert,
+        rxRateThreshold: parseFloat(rxRateThreshold) || 0,
+        txRateThreshold: parseFloat(txRateThreshold) || 0,
+        dailyTrafficThreshold: parseFloat(dailyTrafficThreshold) || 0,
+        singleIpDailyThreshold: parseFloat(singleIpDailyThreshold) || 0
       };
-      
-      await fs.mkdir(path.dirname(CONFIG_FILE), { recursive: true });
-      await fs.writeFile(CONFIG_FILE, JSON.stringify(updatedConfig, null, 2), 'utf8');
-      
+
+      await configServiceDB.saveMonitoringConfig(updatedConfig);
+
       res.json({ success: true, message: '监控配置已保存' });
-      
+
       // 通知监控服务重新加载配置
       if (global.monitoringService && typeof global.monitoringService.reload === 'function') {
         global.monitoringService.reload();
@@ -354,47 +314,19 @@ module.exports = function(app) {
     }
   });
   
-  // 切换监控状态接口
-  app.post('/api/toggle-monitoring', async (req, res) => {
+  // 切换监控状态接口（统一走 SQLite，与 monitoringService 同源）
+  app.post('/api/toggle-monitoring', requireLogin, async (req, res) => {
     try {
-      logger.info('兼容层处理切换监控状态请求');
-      const fs = require('fs').promises;
-      const path = require('path');
-      
       const { isEnabled } = req.body;
-      
-      // 监控配置文件路径
-      const CONFIG_FILE = path.join(__dirname, './config/monitoring.json');
-      
-      // 确保配置文件存在
-      let config = {
-        isEnabled: false,
-        notificationType: 'wechat',
-        webhookUrl: '',
-        telegramToken: '',
-        telegramChatId: '',
-        monitorInterval: 60
-      };
-      
-      try {
-        const data = await fs.readFile(CONFIG_FILE, 'utf8');
-        config = JSON.parse(data);
-      } catch (err) {
-        // 如果读取失败，使用默认配置
-        logger.warn('读取监控配置失败，将使用默认配置:', err);
-      }
-      
-      // 更新启用状态
+      const config = await configServiceDB.getMonitoringConfig();
       config.isEnabled = !!isEnabled;
-      
-      await fs.mkdir(path.dirname(CONFIG_FILE), { recursive: true });
-      await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
-      
-      res.json({ 
-        success: true, 
+      await configServiceDB.saveMonitoringConfig(config);
+
+      res.json({
+        success: true,
         message: `监控已${isEnabled ? '启用' : '禁用'}`
       });
-      
+
       // 通知监控服务重新加载配置
       if (global.monitoringService && typeof global.monitoringService.reload === 'function') {
         global.monitoringService.reload();
@@ -579,9 +511,9 @@ module.exports = function(app) {
   // 登录接口 (兼容层备份)
   app.post('/api/login', async (req, res) => {
     try {
-      const { username, password, captcha } = req.body;
+      const { username, password, captcha, captchaId } = req.body;
       
-      if (req.session.captcha !== parseInt(captcha)) {
+      if (!verifyCaptcha(consumeCaptcha(captchaId), captcha)) {
         logger.warn(`Captcha verification failed for user: ${username}`);
         return res.status(401).json({ error: '验证码错误' });
       }
@@ -594,13 +526,20 @@ module.exports = function(app) {
         return res.status(401).json({ error: '用户名或密码错误' });
       }
 
+      // 判断是否仍使用系统默认密码（admin@123），用于前端登录后安全提醒
+      let requireChangePassword = false;
+      try {
+        const bcrypt = require('bcrypt');
+        requireChangePassword = await bcrypt.compare('admin@123', user.password);
+      } catch (_) { /* 判断失败则按非默认处理，避免阻断登录 */ }
+
       req.session.user = { username: user.username };
       
       // 更新用户登录信息
       await userServiceDB.updateUserLoginInfo(username);
       
       logger.info(`User ${username} logged in successfully`);
-      res.json({ success: true });
+      res.json({ success: true, requireChangePassword });
     } catch (error) {
       logger.error('登录失败:', error);
       res.status(500).json({ error: '登录处理失败', details: error.message });
@@ -882,35 +821,25 @@ module.exports = function(app) {
     }
   });
   
-  // 网络测试接口
+  // 网络测试接口（新版专业诊断，保持旧路径兼容）
   app.post('/api/network-test', requireLogin, async (req, res) => {
-    const { type, domain } = req.body;
-    
-    // 验证输入
-    if (!domain || !domain.match(/^[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
-      return res.status(400).json({ error: '无效的域名格式' });
+    const { type, target, domain, port, url, duration } = req.body;
+
+    // 兼容旧版前端只传 domain 的情况
+    const realTarget = target || domain;
+    if (!type || !realTarget) {
+      return res.status(400).json({ error: '缺少 type 或 target/domain 参数' });
     }
-    
-    if (!type || !['ping', 'traceroute'].includes(type)) {
-      return res.status(400).json({ error: '无效的测试类型' });
-    }
-    
+
     try {
-      const command = type === 'ping' 
-        ? `ping -c 4 ${domain}` 
-        : `traceroute -m 10 ${domain}`;
-        
-      logger.info(`执行网络测试: ${command}`);
-      const result = await execCommand(command, { timeout: 30000 });
-      res.send(result);
+      const result = await networkTestService.runTest({ type, target: realTarget, port, url, duration });
+      res.json(result);
     } catch (error) {
-      logger.error(`执行网络测试命令错误:`, error);
-      
-      if (error.killed) {
-        return res.status(408).send('测试超时');
+      logger.error(`网络测试 [${type}] 失败:`, error);
+      if (error.killed || error.message.includes('超时')) {
+        return res.status(408).json({ error: '测试超时' });
       }
-      
-      res.status(500).send('测试执行失败: ' + (error.message || '未知错误'));
+      res.status(500).json({ error: '测试执行失败', details: error.message || '未知错误' });
     }
   });
   
@@ -946,152 +875,47 @@ module.exports = function(app) {
       }
   });
   
-  // 系统资源兼容路由
+  // 系统资源兼容路由 - 统一复用 systemService，确保网络流量等字段与新版看板一致
   app.get('/api/system-resources', requireLogin, async (req, res) => {
     try {
       const startTime = Date.now();
-      logger.info('兼容层: 请求 /api/system-resources');
-      
-      // 获取CPU信息
-      const cpuCores = os.cpus().length;
-      const cpuModel = os.cpus()[0].model;
-      const cpuSpeed = os.cpus()[0].speed;
-      const loadAvg = os.loadavg();
-      
-      // 获取内存信息
-      const totalMem = os.totalmem();
-      const freeMem = os.freemem();
-      const usedMem = totalMem - freeMem;
-      const memoryPercent = ((usedMem / totalMem) * 100).toFixed(1) + '%';
-      
-      // 获取磁盘信息
-      let diskCommand = '';
-      if (process.platform === 'win32') {
-        diskCommand = 'wmic logicaldisk get size,freespace,caption';
-      } else {
-        // 在 macOS 和 Linux 上使用 df 命令
-        diskCommand = 'df -h /';
-      }
-      
-      try {
-        // 执行磁盘命令
-        logger.debug(`执行磁盘命令: ${diskCommand}`);
-        const { stdout } = await execPromise(diskCommand, { timeout: 5000 });
-        logger.debug(`磁盘命令输出: ${stdout}`);
-        
-        // 解析磁盘信息
-        let disk = { size: "未知", used: "未知", available: "未知", percent: "未知" };
-        
-        if (process.platform === 'win32') {
-          // Windows解析逻辑不变
-          // ... (省略Windows解析代码)
-        } else {
-          // macOS/Linux格式解析
-          const lines = stdout.trim().split('\n');
-          if (lines.length >= 2) {
-            const headerParts = lines[0].trim().split(/\s+/);
-            const dataParts = lines[1].trim().split(/\s+/);
-            
-            logger.debug(`解析磁盘信息, 头部: ${headerParts}, 数据: ${dataParts}`);
-            
-            // 检查MacOS格式 (通常是Filesystem Size Used Avail Capacity iused ifree %iused Mounted on)
-            const isMacOS = headerParts.includes('Capacity') && headerParts.includes('iused');
-            
-            if (isMacOS) {
-              // macOS格式处理
-              const fsIndex = 0; // Filesystem
-              const sizeIndex = 1; // Size
-              const usedIndex = 2; // Used
-              const availIndex = 3; // Avail
-              const percentIndex = 4; // Capacity
-              const mountedIndex = headerParts.indexOf('Mounted') + 1; // Mounted on
-              
-              disk = {
-                filesystem: dataParts[fsIndex],
-                size: dataParts[sizeIndex],
-                used: dataParts[usedIndex],
-                available: dataParts[availIndex],
-                percent: dataParts[percentIndex],
-                mountedOn: dataParts[mountedIndex] || '/'
-              };
-            } else {
-              // 标准Linux格式处理 (通常是Filesystem Size Used Avail Use% Mounted on)
-              const fsIndex = 0; // Filesystem
-              const sizeIndex = 1; // Size
-              const usedIndex = 2; // Used
-              const availIndex = 3; // Avail
-              const percentIndex = 4; // Use%
-              const mountedIndex = 5; // Mounted on
-              
-              disk = {
-                filesystem: dataParts[fsIndex],
-                size: dataParts[sizeIndex],
-                used: dataParts[usedIndex],
-                available: dataParts[availIndex],
-                percent: dataParts[percentIndex],
-                mountedOn: dataParts[mountedIndex] || '/'
-              };
-            }
-          }
-        }
-        
-        // 构建最终结果
-        const result = {
-          cpu: {
-            cores: cpuCores,
-            model: cpuModel,
-            speed: cpuSpeed,
-            loadAvg: loadAvg
-          },
-          memory: {
-            total: totalMem,
-            free: freeMem,
-            used: usedMem,
-            percent: memoryPercent
-          },
-          disk: disk,
-          uptime: os.uptime()
-        };
-        
-        logger.debug(`系统资源API返回结果: ${JSON.stringify(result)}`);
-        
-        // 计算处理时间并返回结果
-        const endTime = Date.now();
-        logger.info(`兼容层: /api/system-resources 请求完成，耗时 ${endTime - startTime}ms`);
-        res.json(result);
-      } catch (diskError) {
-        // 磁盘信息获取失败时，仍然返回CPU和内存信息
-        logger.error(`获取磁盘信息失败: ${diskError.message}`);
-        
-        const result = {
-          cpu: {
-            cores: cpuCores,
-            model: cpuModel,
-            speed: cpuSpeed,
-            loadAvg: loadAvg
-          },
-          memory: {
-            total: totalMem,
-            free: freeMem,
-            used: usedMem,
-            percent: memoryPercent
-          },
-          disk: { size: "未知", used: "未知", available: "未知", percent: "未知" },
-          uptime: os.uptime(),
-          diskError: diskError.message
-        };
-        
-        // 计算处理时间并返回结果（即使有错误）
-        const endTime = Date.now();
-        logger.info(`兼容层: /api/system-resources 请求完成（但磁盘信息失败），耗时 ${endTime - startTime}ms`);
-        res.json(result);
-      }
+      logger.info('兼容层: 请求 /api/system-resources（转发至 systemService）');
+
+      const r = await systemService.getSystemResources();
+      const result = {
+        cpu: r.cpu,
+        memory: r.memory,
+        disk: r.disk,
+        diskSpace: r.disk,
+        network: r.network,
+        system: r.system,
+        uptime: r.system?.uptime ?? os.uptime()
+      };
+
+      const endTime = Date.now();
+      logger.info(`兼容层: /api/system-resources 请求完成，耗时 ${endTime - startTime}ms`);
+      res.json(result);
     } catch (error) {
       logger.error(`系统资源API错误: ${error.message}`);
       res.status(500).json({ error: '获取系统资源信息失败', message: error.message });
     }
   });
-  
+
+  // 网络流量监控：当前实时速率 + 历史吞吐曲线 + 窗口内总量
+  app.get('/api/network-traffic', requireLogin, async (req, res) => {
+    try {
+      const hours = Math.min(Math.max(parseInt(req.query.hours) || 24, 1), 24 * 7);
+      const [current, history] = await Promise.all([
+        trafficService.getCurrent(),
+        trafficService.getHistory(hours)
+      ]);
+      res.json({ current, history });
+    } catch (error) {
+      logger.error('获取网络流量失败:', error);
+      res.status(500).json({ error: '获取网络流量失败', message: error.message });
+    }
+  });
+
   // 登出接口
   app.post('/api/logout', (req, res) => {
     if (req.session) {

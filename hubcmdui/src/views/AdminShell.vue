@@ -3,7 +3,7 @@
   <div v-if="!ready" class="auth-loading">
     <div class="auth-loading-inner">
       <div class="spinner"></div>
-      <p class="auth-loading-text">正在验证登录状态…</p>
+      <p class="auth-loading-text">{{ t('common.verifying') }}</p>
     </div>
   </div>
   <Login v-else-if="!authed" :redirect="intended" @logged-in="onLoggedIn" />
@@ -20,12 +20,14 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import Login from '../views/Login.vue'
 import AdminLayout from '../layout/AdminLayout.vue'
 import { useAuth } from '../composables/useAuth'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const { authed, ready, refresh } = useAuth()
 
 // 记录用户真正想访问的后台地址，登录成功后跳回（保持地址栏干净，不出现 ?redirect=）

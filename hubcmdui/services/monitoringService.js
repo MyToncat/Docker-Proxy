@@ -5,12 +5,25 @@ const axios = require('axios');
 const logger = require('../logger');
 const configServiceDB = require('./configServiceDB');
 const dockerService = require('./dockerService');
+const systemService = require('./systemService');
+const metricsService = require('./metricsService');
+const { goProxyService } = require('./goProxyService');
 
 // 监控相关状态映射
 let containerStates = new Map();
 let lastStopAlertTime = new Map();
 let secondAlertSent = new Set();
 let monitoringInterval = null;
+let lastTrafficAlertTime = new Map();
+
+function formatBytes(bytes, decimals = 2) {
+  if (bytes == null || isNaN(bytes) || bytes === 0) return '0 B';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  const i = Math.min(sizes.length - 1, Math.floor(Math.log(bytes) / Math.log(k)));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
 
 // 更新监控配置
 async function updateMonitoringConfig(config) {
@@ -52,9 +65,10 @@ async function startMonitoring() {
           clearInterval(monitoringInterval);
         }
         
-        // 启动监控间隔
+        // 启动监控间隔（容器状态 + 网络流量告警）
         monitoringInterval = setInterval(async () => {
           await checkContainerStates(docker, config.monitoringConfig);
+          await checkTrafficStates(config.monitoringConfig);
         }, (monitorInterval || 60) * 1000);
         
         // 监听Docker事件流
@@ -216,12 +230,95 @@ async function checkContainerStates(docker, monitoringConfig) {
 async function checkSecondStopAlert(containerName, currentStatus, monitoringConfig) {
   const now = Date.now();
   const lastStopAlert = lastStopAlertTime.get(containerName) || 0;
-  
+
   // 如果距离上次停止告警超过1小时，且还没有发送过第二次告警，则发送第二次告警
   if (now - lastStopAlert >= 60 * 60 * 1000 && !secondAlertSent.has(containerName)) {
     await sendAlertWithRetry(containerName, `仍未恢复 (当前状态: ${currentStatus})`, monitoringConfig);
     secondAlertSent.add(containerName); // 标记已发送第二次告警
   }
+}
+
+// 检查网络流量是否超出阈值并发送告警
+async function checkTrafficStates(monitoringConfig) {
+  if (!monitoringConfig || !monitoringConfig.enableTrafficAlert) return;
+
+  const now = Date.now();
+  const {
+    rxRateThreshold = 0,
+    txRateThreshold = 0,
+    dailyTrafficThreshold = 0,
+    singleIpDailyThreshold = 0,
+    monitorInterval = 60
+  } = monitoringConfig;
+  const minInterval = Math.max(monitorInterval * 1000, 60 * 1000); // 同一种告警至少间隔一个检测周期，且不少于 60s
+
+  try {
+    // 1) 实时速率告警
+    const counters = await systemService.getNetworkCounters();
+    const rxLimit = rxRateThreshold * 1024 * 1024;
+    const txLimit = txRateThreshold * 1024 * 1024;
+    if (rxRateThreshold > 0 && counters.rxSec >= rxLimit) {
+      await sendTrafficAlertIfNeeded('rxRate',
+        `下载速率 ${formatBytes(counters.rxSec)}/s 超过阈值 ${rxRateThreshold} MB/s`,
+        monitoringConfig, now, minInterval);
+    }
+    if (txRateThreshold > 0 && counters.txSec >= txLimit) {
+      await sendTrafficAlertIfNeeded('txRate',
+        `上传速率 ${formatBytes(counters.txSec)}/s 超过阈值 ${txRateThreshold} MB/s`,
+        monitoringConfig, now, minInterval);
+    }
+
+    // 2) 24h 总流量告警
+    if (dailyTrafficThreshold > 0) {
+      const fromTs = now - 24 * 3600 * 1000;
+      const rows = await metricsService.getNetworkHistory(fromTs);
+      let rxTotal = 0, txTotal = 0, prev = null;
+      for (const r of rows) {
+        if (prev) {
+          const drx = r.rx_bytes - prev.rx_bytes;
+          const dtx = r.tx_bytes - prev.tx_bytes;
+          if (drx > 0) rxTotal += drx;
+          if (dtx > 0) txTotal += dtx;
+        }
+        prev = r;
+      }
+      const total = rxTotal + txTotal;
+      const dayLimit = dailyTrafficThreshold * 1024 * 1024 * 1024;
+      if (total >= dayLimit) {
+        await sendTrafficAlertIfNeeded('daily',
+          `24h 总流量 ${formatBytes(total)} 超过阈值 ${dailyTrafficThreshold} GB`,
+          monitoringConfig, now, minInterval);
+      }
+    }
+
+    // 3) 单客户端 IP 累计流量告警
+    // 注：go-proxy stats 当前为服务启动以来累计；如需严格「日流量」，后续可在 go-proxy 侧增加日维度。
+    if (singleIpDailyThreshold > 0) {
+      try {
+        const stats = await goProxyService.getStats();
+        const clients = (stats && stats.clients) || [];
+        const ipLimit = singleIpDailyThreshold * 1024 * 1024 * 1024;
+        for (const c of clients) {
+          if (c.bytesTotal >= ipLimit) {
+            await sendTrafficAlertIfNeeded(`ip:${c.ip}`,
+              `客户端 ${c.ip} 累计流量 ${formatBytes(c.bytesTotal)} 超过阈值 ${singleIpDailyThreshold} GB`,
+              monitoringConfig, now, minInterval);
+          }
+        }
+      } catch (e) {
+        logger.debug('获取 go-proxy stats 失败，跳过单 IP 流量告警:', e.message);
+      }
+    }
+  } catch (error) {
+    logger.error('检查流量状态失败:', error);
+  }
+}
+
+async function sendTrafficAlertIfNeeded(key, message, monitoringConfig, now, minInterval) {
+  const last = lastTrafficAlertTime.get(key) || 0;
+  if (now - last < minInterval) return;
+  lastTrafficAlertTime.set(key, now);
+  await sendAlertWithRetry('网络流量', message, monitoringConfig);
 }
 
 // 发送告警（带重试）

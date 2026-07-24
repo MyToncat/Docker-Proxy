@@ -8,8 +8,8 @@
           <img v-else src="/images/docker-proxy.png" alt="Docker 镜像加速服务" />
         </span>
         <span class="brand-text">
-          <span class="brand-name">Docker 镜像加速服务</span>
-          <span class="brand-sub">后台管理</span>
+          <span class="brand-name">{{ t('layout.brandName') }}</span>
+          <span class="brand-sub">{{ t('layout.brandSub') }}</span>
         </span>
       </div>
       <nav class="side-nav">
@@ -21,23 +21,23 @@
           :class="{ active: isActive(item) }"
         >
           <el-icon class="side-icon"><component :is="item.icon" /></el-icon>
-          <span>{{ item.title }}</span>
+          <span>{{ t('nav.' + item.name) }}</span>
         </router-link>
       </nav>
       <div class="aside-foot">
-        <div class="foot-tip">© {{ year }} Docker 镜像加速服务</div>
+        <div class="foot-tip">{{ t('layout.footer', { year }) }}</div>
         <a
           v-if="githubUrl"
           class="foot-github"
           :href="githubUrl"
           target="_blank"
           rel="noopener noreferrer"
-          title="GitHub 仓库"
+          :title="t('layout.github')"
         >
           <svg class="gh-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
             <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
           </svg>
-          <span>GitHub</span>
+          <span>{{ t('layout.github') }}</span>
         </a>
       </div>
     </el-aside>
@@ -47,6 +47,8 @@
       <el-header class="admin-header">
         <div class="header-title">{{ currentTitle }}</div>
         <div class="header-right">
+          <!-- 语言切换 -->
+          <LangSwitch />
           <!-- 主题切换 -->
           <el-dropdown trigger="click" @command="onThemeCmd">
             <span class="theme-toggle" :title="themeLabel">
@@ -61,13 +63,13 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="light">
-                  <el-icon><Sunny /></el-icon> 浅色
+                  <el-icon><Sunny /></el-icon> {{ t('layout.themeLight') }}
                 </el-dropdown-item>
                 <el-dropdown-item command="dark">
-                  <el-icon><Moon /></el-icon> 深色
+                  <el-icon><Moon /></el-icon> {{ t('layout.themeDark') }}
                 </el-dropdown-item>
                 <el-dropdown-item command="auto">
-                  <el-icon><Monitor /></el-icon> 跟随系统
+                  <el-icon><Monitor /></el-icon> {{ t('layout.themeAuto') }}
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -77,7 +79,7 @@
             <el-icon><User /></el-icon>
             <span v-if="username">{{ username }}</span>
           </span>
-          <el-button text :icon="SwitchButton" @click="onLogout">退出登录</el-button>
+          <el-button text :icon="SwitchButton" @click="onLogout">{{ t('layout.logout') }}</el-button>
         </div>
       </el-header>
 
@@ -92,29 +94,34 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import {
   Odometer, Cpu, Connection, Document, Operation,
   Histogram, Monitor, User, SwitchButton,
-  Sunny, Moon, CaretBottom, Setting
+  Sunny, Moon, CaretBottom, Setting, DataLine, Lock
 } from '@element-plus/icons-vue'
 import { getConfig, getUserInfo, logout, getSiteInfo } from '../services'
 import { useTheme } from '../composables/useTheme'
 import { useAuth } from '../composables/useAuth'
+import LangSwitch from '../components/LangSwitch.vue'
 
 const nav = [
   { name: 'dashboard', title: '系统看板', icon: Odometer },
   { name: 'basic', title: '基本配置', icon: Setting },
   { name: 'docker', title: '容器管理', icon: Cpu },
   { name: 'goproxy', title: '代理管理', icon: Connection },
+  { name: 'ipaccess', title: 'IP 访问控制', icon: Lock },
   { name: 'documents', title: '文档管理', icon: Document },
   { name: 'menu', title: '菜单管理', icon: Operation },
   { name: 'network', title: '网络测试', icon: Histogram },
+  { name: 'traffic', title: '流量监控', icon: DataLine },
   { name: 'monitoring', title: '监控配置', icon: Monitor },
   { name: 'user', title: '用户中心', icon: User }
 ]
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const logo = ref('')
 const username = ref('')
 const year = ref(new Date().getFullYear())
@@ -141,20 +148,22 @@ onBeforeUnmount(() => {
 })
 
 const themeLabel = computed(() => {
-  if (mode.value === 'light') return '浅色'
-  if (mode.value === 'dark') return '深色'
-  return `自动（${effective.value === 'dark' ? '深' : '浅'}）`
+  if (mode.value === 'light') return t('layout.themeLight')
+  if (mode.value === 'dark') return t('layout.themeDark')
+  return t('layout.themeAutoFull', {
+    mode: effective.value === 'dark' ? t('layout.themeDark') : t('layout.themeLight')
+  })
 })
 
 function onThemeCmd(cmd) {
   setMode(cmd)
   refreshApplied()
-  ElMessage.success('主题已切换')
+  ElMessage.success(t('layout.themeSwitched'))
 }
 
 const currentTitle = computed(() => {
   const item = nav.find(n => isActive(n))
-  return item ? item.title : 'Docker 镜像加速服务'
+  return item ? t('nav.' + item.name) : t('layout.brandName')
 })
 
 // 精确匹配：避免 vue-router 默认的"包含匹配"（前缀命中）导致「系统看板」在所有 /admin/* 子路由都高亮

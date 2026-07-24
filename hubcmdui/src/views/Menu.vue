@@ -3,11 +3,11 @@
     <!-- 顶部标题栏 -->
     <div class="page-head">
       <div>
-        <h2>菜单管理</h2>
-        <p class="muted">管理前台顶部的导航菜单项</p>
+        <h2>{{ t('menu.title') }}</h2>
+        <p class="muted">{{ t('menu.subtitle') }}</p>
       </div>
       <el-button type="primary" class="add-btn" @click="openAdd">
-        <el-icon><Plus /></el-icon> 添加菜单项
+        <el-icon><Plus /></el-icon> {{ t('menu.addItem') }}
       </el-button>
     </div>
 
@@ -15,22 +15,22 @@
     <div class="stat-grid">
       <div class="stat-card">
         <div class="stat-ic stat-ic--blue"><el-icon><Menu /></el-icon></div>
-        <div class="stat-meta"><span class="stat-val">{{ items.length }}</span><span class="stat-lbl">菜单项总数</span></div>
+        <div class="stat-meta"><span class="stat-val">{{ items.length }}</span><span class="stat-lbl">{{ t('menu.statTotal') }}</span></div>
       </div>
       <div class="stat-card">
         <div class="stat-ic stat-ic--green"><el-icon><Promotion /></el-icon></div>
-        <div class="stat-meta"><span class="stat-val">{{ newTabCount }}</span><span class="stat-lbl">新标签页打开</span></div>
+        <div class="stat-meta"><span class="stat-val">{{ newTabCount }}</span><span class="stat-lbl">{{ t('menu.statNewTab') }}</span></div>
       </div>
     </div>
 
     <!-- ============ 工具栏 ============ -->
     <div class="toolbar">
-      <el-input v-model="search" class="toolbar__search" placeholder="按文本或链接搜索" clearable>
+      <el-input v-model="search" class="toolbar__search" :placeholder="t('menu.searchPlaceholder')" clearable>
         <template #prefix><el-icon><Search /></el-icon></template>
       </el-input>
       <span class="toolbar__spacer" />
-      <span class="toolbar__count">共 <b>{{ filteredItems.length }}</b> 个菜单项</span>
-      <el-button :icon="Refresh" circle plain title="刷新" @click="load" />
+      <span class="toolbar__count" v-html="t('menu.countLabel', { count: '<b>' + filteredItems.length + '</b>' })" />
+      <el-button :icon="Refresh" circle plain :title="t('common.refresh')" @click="load" />
     </div>
 
     <!-- ============ 菜单项表格 ============ -->
@@ -39,7 +39,7 @@
         v-if="filteredItems.length"
         :data="filteredItems"
         :row-key="rowKey"
-        empty-text="暂无菜单项，点击右上角「添加菜单项」开始"
+        :empty-text="t('menu.emptyTable')"
         class="admin-table"
         stripe
       >
@@ -48,36 +48,36 @@
             <span class="row-index">{{ $index + 1 }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="图标" width="90" align="center">
+        <el-table-column :label="t('menu.colIcon')" width="90" align="center">
           <template #default="{ row }">
             <span class="cell-icon" :class="{ 'cell-icon--empty': !row.icon }" v-html="getMenuIconSvg(row.icon)" />
           </template>
         </el-table-column>
-        <el-table-column label="菜单文本" min-width="200">
+        <el-table-column :label="t('menu.colText')" min-width="200">
           <template #default="{ row }">
             <!-- 菜单文本直接展示：左侧不再放头像占位（与独立的"图标"列重复） -->
             <span class="cell-title">{{ row.text || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="链接地址" min-width="240">
+        <el-table-column :label="t('menu.colLink')" min-width="240">
           <template #default="{ row }">
             <code class="cell-code">{{ row.link || '-' }}</code>
           </template>
         </el-table-column>
-        <el-table-column label="新标签页" width="120" align="center">
+        <el-table-column :label="t('menu.colNewTab')" width="120" align="center">
           <template #default="{ row }">
             <span class="badge" :class="row.newTab ? 'badge--yes' : 'badge--no'">
-              {{ row.newTab ? '是' : '否' }}
+              {{ row.newTab ? t('common.yes') : t('common.no') }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" align="center" fixed="right">
+        <el-table-column :label="t('common.actions')" width="160" align="center" fixed="right">
           <template #default="{ row }">
             <div class="row-actions">
-              <el-button circle size="small" type="primary" plain @click="openEdit(row)" title="编辑">
+              <el-button circle size="small" type="primary" plain @click="openEdit(row)" :title="t('common.edit')">
                 <el-icon><Edit /></el-icon>
               </el-button>
-              <el-button circle size="small" type="danger" plain @click="onDelete(row)" title="删除">
+              <el-button circle size="small" type="danger" plain @click="onDelete(row)" :title="t('common.delete')">
                 <el-icon><Delete /></el-icon>
               </el-button>
             </div>
@@ -86,13 +86,13 @@
       </el-table>
       <div v-else class="empty-state">
         <div class="empty-ic"><el-icon><Menu /></el-icon></div>
-        <div class="empty-title">{{ search ? '没有匹配的菜单项' : '还没有任何菜单项' }}</div>
+        <div class="empty-title">{{ search ? t('menu.emptyMatch') : t('menu.emptyNone') }}</div>
         <p class="empty-desc">
-          {{ search ? `没有与“${search}”匹配的菜单项，换个关键词试试。` : '点击右上角「添加菜单项」，向前台导航栏添加入口。' }}
+          {{ search ? t('menu.emptyMatchDesc', { search }) : t('menu.emptyNoneDesc') }}
         </p>
         <div class="empty-actions">
-          <el-button v-if="search" @click="search = ''">清除搜索</el-button>
-          <el-button v-else type="primary" class="add-btn" @click="openAdd"><el-icon><Plus /></el-icon> 添加菜单项</el-button>
+          <el-button v-if="search" @click="search = ''">{{ t('menu.clearSearch') }}</el-button>
+          <el-button v-else type="primary" class="add-btn" @click="openAdd"><el-icon><Plus /></el-icon> {{ t('menu.addItem') }}</el-button>
         </div>
       </div>
     </div>
@@ -112,8 +112,8 @@
             <el-icon><EditPen /></el-icon>
           </div>
           <div class="banner-text">
-            <h3 class="banner-title">{{ isEdit ? '编辑菜单项' : '添加菜单项' }}</h3>
-            <p class="banner-subtitle">修改菜单显示文本和链接配置</p>
+            <h3 class="banner-title">{{ isEdit ? t('menu.editItem') : t('menu.addItem') }}</h3>
+            <p class="banner-subtitle">{{ t('menu.dialogSubtitle') }}</p>
           </div>
         </div>
       </template>
@@ -126,11 +126,11 @@
               <span class="label-icon">
                 <el-icon><EditPen /></el-icon>
               </span>
-              菜单文本
+              {{ t('menu.colText') }}
             </label>
             <el-input
               v-model="form.text"
-              placeholder="输入菜单显示文本"
+              :placeholder="t('menu.textPlaceholder')"
               class="form-input"
             />
           </div>
@@ -139,11 +139,11 @@
               <span class="label-icon">
                 <el-icon><Link /></el-icon>
               </span>
-              链接地址
+              {{ t('menu.colLink') }}
             </label>
             <el-input
               v-model="form.link"
-              placeholder="例如 / 或 https://example.com"
+              :placeholder="t('menu.linkPlaceholder')"
               class="form-input"
             />
           </div>
@@ -155,13 +155,13 @@
             <span class="label-icon">
               <el-icon><Picture /></el-icon>
             </span>
-            菜单图标
+            {{ t('menu.iconLabel') }}
           </label>
           <div class="icon-picker">
             <div class="icon-picker__preview" :class="{ 'icon-picker__preview--empty': !form.icon }">
               <!-- 关键：v-if 包裹。空时（"无"格）不渲染任何图标 SVG，避免 getMenuIconSvg 兜底导致显示链接图标 -->
               <span v-if="form.icon" class="icon-picker__preview-ic" v-html="getMenuIconSvg(form.icon)"></span>
-              <span v-if="!form.icon" class="icon-picker__placeholder">无</span>
+              <span v-if="!form.icon" class="icon-picker__placeholder">{{ t('menu.none') }}</span>
             </div>
             <div class="icon-picker__grid">
               <!-- 「无」格：清空选择，使用通用链接图标作为兜底 -->
@@ -169,11 +169,11 @@
                 type="button"
                 class="icon-cell icon-cell--clear"
                 :class="{ 'icon-cell--active': !form.icon }"
-                title="清空图标（使用通用链接图标）"
+                :title="t('menu.clearIconTitle')"
                 @click="clearIcon"
               >
                 <span class="icon-cell__clear-mark">∅</span>
-                <span class="icon-cell__label">无</span>
+                <span class="icon-cell__label">{{ t('menu.none') }}</span>
               </button>
               <button
                 v-for="it in menuIconList"
@@ -192,14 +192,14 @@
           <!-- 自定义 SVG 输入：默认折叠，留空则使用上方选中的预设图标 -->
           <details class="icon-custom">
             <summary class="icon-custom__summary">
-              <span>自定义 SVG（可选）</span>
+              <span>{{ t('menu.customSvg') }}</span>
               <el-icon class="icon-custom__chevron"><ArrowDown /></el-icon>
             </summary>
             <el-input
               v-model="form.iconCustom"
               type="textarea"
               :rows="2"
-              placeholder='例如：<svg viewBox="0 0 24 24" fill="currentColor"><path d="..."/></svg>'
+              :placeholder="t('menu.svgPlaceholder')"
               class="icon-custom__textarea"
               @input="onCustomSvgInput"
             />
@@ -211,7 +211,7 @@
           <div class="preview-block">
             <label class="preview-block__label">
               <span class="label-icon"><el-icon><Promotion /></el-icon></span>
-              新标签页打开
+              {{ t('menu.statNewTab') }}
             </label>
             <div class="preview-block__body">
               <el-switch v-model="form.newTab" class="toggle-switch" />
@@ -220,7 +220,7 @@
           <div class="preview-block">
             <label class="preview-block__label">
               <span class="label-icon"><el-icon><View /></el-icon></span>
-              效果预览
+              {{ t('menu.preview') }}
             </label>
             <div class="preview-block__body preview-block__body--link">
               <a
@@ -234,7 +234,7 @@
                   class="preview-link__ic"
                   v-html="getMenuIconSvg(form.icon || (isGithubIcon() ? 'github' : ''))"
                 />
-                <span>{{ form.text || '菜单项' }}</span>
+                <span>{{ form.text || t('menu.menuItemFallback') }}</span>
                 <el-icon v-if="form.newTab" class="external-icon"><Promotion /></el-icon>
               </a>
             </div>
@@ -244,9 +244,9 @@
 
       <template #footer>
         <div class="dialog-footer">
-          <el-button class="footer-btn" @click="dialogVisible = false">取消</el-button>
+          <el-button class="footer-btn" @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
           <el-button class="footer-btn primary" :loading="saving" @click="onSave">
-            <el-icon><Check /></el-icon> 保存更改
+            <el-icon><Check /></el-icon> {{ t('menu.saveChanges') }}
           </el-button>
         </div>
       </template>
@@ -256,10 +256,13 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete, EditPen, Link, Promotion, View, Check, Menu, Search, Refresh, Picture, ArrowDown } from '@element-plus/icons-vue'
 import { getMenuItems, saveMenuItems } from '../services'
 import { getMenuIconSvg, MENU_ICON_LIST, isCustomIconSvg } from '../lib/menuIcons'
+
+const { t } = useI18n()
 
 const menuIconList = MENU_ICON_LIST
 
@@ -315,7 +318,7 @@ async function load() {
       newTab: !!it.newTab
     })) : []
   } catch (e) {
-    ElMessage.warning('读取菜单失败：' + (e.response?.data?.error || e.message))
+    ElMessage.warning(t('menu.readFailed', { msg: e.response?.data?.error || e.message }))
   } finally {
     loading.value = false
   }
@@ -381,10 +384,10 @@ function isValidLink(link) {
 function validate() {
   const text = (form.text || '').trim()
   const link = (form.link || '').trim()
-  if (!text) return '请填写菜单文本'
-  if (!link) return '请填写链接地址'
+  if (!text) return t('menu.pleaseText')
+  if (!link) return t('menu.pleaseLink')
   if (!isValidLink(link)) {
-    return '链接格式无效：需以 http://、https:// 开头，或以 / 开头的站内路径'
+    return t('menu.invalidLink')
   }
   return null
 }
@@ -420,11 +423,11 @@ async function onSave() {
       next.push(patch)
     }
     await saveMenuItems(next)
-    ElMessage.success(isEdit.value ? '菜单项已更新' : '菜单项已添加')
+    ElMessage.success(isEdit.value ? t('menu.updated') : t('menu.added'))
     dialogVisible.value = false
     await load()
   } catch (e) {
-    ElMessage.error('保存失败：' + (e.response?.data?.error || e.message))
+    ElMessage.error(t('menu.saveFailed', { msg: e.response?.data?.error || e.message }))
   } finally {
     saving.value = false
   }
@@ -433,9 +436,9 @@ async function onSave() {
 async function onDelete(row) {
   try {
     await ElMessageBox.confirm(
-      `确认删除菜单项「${row.text}」？`,
-      '删除确认',
-      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+      t('menu.confirmDelete', { text: row.text }),
+      t('menu.deleteConfirmTitle'),
+      { type: 'warning', confirmButtonText: t('common.delete'), cancelButtonText: t('common.cancel') }
     )
   } catch { return }
   const i = items.value.findIndex(r =>
@@ -454,9 +457,9 @@ async function onDelete(row) {
       return obj
     })
     await saveMenuItems(next)
-    ElMessage.success('已删除')
+    ElMessage.success(t('menu.deleted'))
   } catch (e) {
-    ElMessage.error('删除失败：' + (e.response?.data?.error || e.message))
+    ElMessage.error(t('menu.deleteFailed', { msg: e.response?.data?.error || e.message }))
     await load()
   }
 }

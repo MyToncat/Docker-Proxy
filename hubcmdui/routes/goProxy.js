@@ -63,4 +63,16 @@ router.get('/status', async (req, res) => {
   }
 });
 
+// 按客户端 IP 的流量统计（来自 go-proxy /-/stats）
+router.get('/stats', requireLogin, async (req, res) => {
+  try {
+    const data = await goProxyService.getStats();
+    res.json(data);
+  } catch (e) {
+    logger.error('获取代理流量统计失败:', e.message);
+    const err = upstreamError(e);
+    res.status(err.status || 502).json(err.body);
+  }
+});
+
 module.exports = router;

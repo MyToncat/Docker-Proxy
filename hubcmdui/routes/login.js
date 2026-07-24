@@ -7,16 +7,12 @@ const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
 const logger = require('../logger');
-
-// 生成随机验证码
-function generateCaptcha() {
-    return Math.floor(1000 + Math.random() * 9000).toString();
-}
+const { generateCaptchaCode, verifyCaptcha } = require('../lib/captcha');
 
 // 获取验证码
 router.get('/captcha', (req, res) => {
-    const captcha = generateCaptcha();
-    req.session.captcha = captcha;
+    const captcha = generateCaptchaCode(4);
+    req.session.captcha = captcha; // 标准答案（大写）
     res.json({ captcha });
 });
 
@@ -25,8 +21,8 @@ router.post('/login', async (req, res) => {
     try {
         const { username, password, captcha } = req.body;
         
-        // 验证码检查（类型无关比较，兼容数字/字符串）
-        if (!req.session.captcha || String(req.session.captcha).trim() !== String(captcha).trim()) {
+        // 验证码检查（随机字母/数字，大小写不敏感）
+        if (!verifyCaptcha(req.session.captcha, captcha)) {
             return res.status(401).json({ error: '验证码错误' });
         }
         

@@ -3,8 +3,8 @@
     <!-- 顶部标题栏 -->
     <div class="page-head">
       <div class="head-left">
-        <h2>代理管理</h2>
-        <p class="muted">在线管理镜像代理（注册表）与服务设置，无需手动编辑配置文件</p>
+        <h2>{{ t('nav.goproxy') }}</h2>
+        <p class="muted">{{ t('goproxy.subtitle') }}</p>
       </div>
       <div class="head-actions">
         <el-button
@@ -14,15 +14,15 @@
           @click="onRefresh"
         >
           <el-icon><Refresh /></el-icon>
-          <span>刷新数据</span>
+          <span>{{ t('goproxy.refreshData') }}</span>
         </el-button>
         <el-popconfirm
           width="260"
-          confirm-button-text="确认重载"
-          cancel-button-text="取消"
+          :confirm-button-text="t('goproxy.confirmReload')"
+          :cancel-button-text="t('common.cancel')"
           icon-color="#e6a23c"
           :icon="WarningFilled"
-          title="重载会让 go-proxy 重新读取配置并刷新路由。是否继续？"
+          :title="t('goproxy.reloadConfirmTitle')"
           @confirm="onReload"
         >
           <template #reference>
@@ -33,7 +33,7 @@
               class="head-btn head-btn--warning"
             >
               <el-icon><RefreshRight /></el-icon>
-              <span>重载服务</span>
+              <span>{{ t('goproxy.reloadService') }}</span>
             </el-button>
           </template>
         </el-popconfirm>
@@ -48,19 +48,19 @@
             <el-icon><Setting /></el-icon>
           </div>
           <div class="block-titles">
-            <div class="block-title">服务设置</div>
-            <div class="block-desc">配置代理监听地址、超时参数与默认注册表</div>
+            <div class="block-title">{{ t('goproxy.serverSettings') }}</div>
+            <div class="block-desc">{{ t('goproxy.serverSettingsDesc') }}</div>
           </div>
         </div>
       </template>
 
       <el-form :model="serverForm" label-position="top" class="server-form">
-        <el-form-item label="监听地址" required>
-          <el-input v-model="serverForm.listen" placeholder="例如 :5000" />
-          <div class="hint">代理对外提供服务的地址，例如 :5000</div>
+        <el-form-item :label="t('goproxy.listenAddr')" required>
+          <el-input v-model="serverForm.listen" :placeholder="t('goproxy.listenPlaceholder')" />
+          <div class="hint">{{ t('goproxy.listenHint') }}</div>
         </el-form-item>
-        <el-form-item label="默认注册表" required>
-          <el-select v-model="serverForm.default" placeholder="未匹配到具体域名时使用" style="width: 100%">
+        <el-form-item :label="t('goproxy.defaultRegistry')" required>
+          <el-select v-model="serverForm.default" :placeholder="t('goproxy.defaultRegistryPlaceholder')" style="width: 100%">
             <el-option
               v-for="r in serverForm.registries"
               :key="r.name"
@@ -68,25 +68,25 @@
               :value="r.name"
             />
           </el-select>
-          <div class="hint">未匹配到具体域名时使用的注册表</div>
+          <div class="hint">{{ t('goproxy.defaultRegistryHint') }}</div>
         </el-form-item>
-        <el-form-item label="读取超时 (秒)" required>
+        <el-form-item :label="t('goproxy.readTimeout')" required>
           <el-input-number v-model="serverForm.readTimeout" :min="0" :step="1" style="width: 100%" />
-          <div class="hint">代理读取上游超时时间，0 表示使用默认 60s</div>
+          <div class="hint">{{ t('goproxy.readTimeoutHint') }}</div>
         </el-form-item>
-        <el-form-item label="写入超时 (秒)" required>
+        <el-form-item :label="t('goproxy.writeTimeout')" required>
           <el-input-number v-model="serverForm.writeTimeout" :min="0" :step="1" style="width: 100%" />
-          <div class="hint">代理写回客户端超时时间，0 表示不限制（流式传输需要）</div>
+          <div class="hint">{{ t('goproxy.writeTimeoutHint') }}</div>
         </el-form-item>
-        <el-form-item label="空闲超时 (秒)" required>
+        <el-form-item :label="t('goproxy.idleTimeout')" required>
           <el-input-number v-model="serverForm.idleTimeout" :min="0" :step="1" style="width: 100%" />
-          <div class="hint">连接空闲超时时间，0 表示使用默认 120s</div>
+          <div class="hint">{{ t('goproxy.idleTimeoutHint') }}</div>
         </el-form-item>
       </el-form>
 
       <div class="block-actions">
         <el-button type="primary" :loading="serverSaving" @click="onSaveServer">
-          <el-icon><Document /></el-icon> 保存服务器设置
+          <el-icon><Document /></el-icon> {{ t('goproxy.saveServerSettings') }}
         </el-button>
       </div>
     </el-card>
@@ -99,11 +99,11 @@
             <el-icon><Box /></el-icon>
           </div>
           <div class="block-titles">
-            <div class="block-title">注册表代理</div>
-            <div class="block-desc">管理各个公共镜像仓库的代理规则</div>
+            <div class="block-title">{{ t('goproxy.registryProxy') }}</div>
+            <div class="block-desc">{{ t('goproxy.registryProxyDesc') }}</div>
           </div>
           <el-button type="primary" class="head-action" @click="onAddReg">
-            <el-icon><Plus /></el-icon> 添加代理
+            <el-icon><Plus /></el-icon> {{ t('goproxy.addProxy') }}
           </el-button>
         </div>
       </template>
@@ -116,37 +116,37 @@
         style="width: 100%"
         class="reg-table"
       >
-        <el-table-column prop="name" label="名称" min-width="120">
+        <el-table-column prop="name" :label="t('common.name')" min-width="120">
           <template #default="{ row }">
             <span class="reg-name-cell">{{ row.name }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="匹配域名 (HOSTS)" min-width="240">
+        <el-table-column :label="t('goproxy.colMatchHosts')" min-width="240">
           <template #default="{ row }">
             <div class="hosts-cell">
               <span v-for="(h, i) in row.hosts" :key="i" class="host-chip">{{ h }}</span>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="上游地址 (UPSTREAM)" min-width="240">
+        <el-table-column :label="t('goproxy.colUpstream')" min-width="240">
           <template #default="{ row }">
             <span class="upstream-cell">{{ row.upstream }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="认证方式" width="120">
+        <el-table-column :label="t('goproxy.colAuth')" width="120">
           <template #default="{ row }">
             <span class="auth-cell">{{ authLabel(row.auth?.type) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column :label="t('common.status')" width="100">
           <template #default="{ row }">
-            <el-tag v-if="isEnabled(row)" type="success" effect="dark" size="small">已启用</el-tag>
-            <el-tag v-else type="info" effect="plain" size="small">已禁用</el-tag>
+            <el-tag v-if="isEnabled(row)" type="success" effect="dark" size="small">{{ t('goproxy.statusEnabled') }}</el-tag>
+            <el-tag v-else type="info" effect="plain" size="small">{{ t('goproxy.statusDisabled') }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column :label="t('common.actions')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button circle size="small" type="primary" plain @click="onEditReg(row)" title="编辑">
+            <el-button circle size="small" type="primary" plain @click="onEditReg(row)" :title="t('common.edit')">
               <el-icon><Edit /></el-icon>
             </el-button>
             <el-button
@@ -155,17 +155,17 @@
               :type="isEnabled(row) ? 'warning' : 'success'"
               plain
               @click="onToggleReg(row)"
-              :title="isEnabled(row) ? '停用' : '启用'"
+              :title="isEnabled(row) ? t('goproxy.disable') : t('common.enabled')"
             >
               <el-icon><SwitchButton /></el-icon>
             </el-button>
-            <el-button circle size="small" type="danger" plain @click="onDeleteReg(row)" title="删除">
+            <el-button circle size="small" type="danger" plain @click="onDeleteReg(row)" :title="t('common.delete')">
               <el-icon><Delete /></el-icon>
             </el-button>
           </template>
         </el-table-column>
         <template #empty>
-          <el-empty description="暂无注册表代理，点击右上角「添加代理」开始" :image-size="80" />
+          <el-empty :description="t('goproxy.emptyRegistries')" :image-size="80" />
         </template>
       </el-table>
     </el-card>
@@ -187,17 +187,17 @@
             </div>
             <div class="banner-text">
               <h3 class="banner-title">
-                {{ editIndex >= 0 ? '编辑代理' : '添加代理' }}
+                {{ editIndex >= 0 ? t('goproxy.editProxy') : t('goproxy.addProxy') }}
                 <span v-if="editForm.name" class="banner-name">· {{ editForm.name }}</span>
               </h3>
-              <p class="banner-subtitle">配置镜像代理的名称、域名映射、上游仓库与认证</p>
+              <p class="banner-subtitle">{{ t('goproxy.editDialogSubtitle') }}</p>
             </div>
             <span v-if="editIndex >= 0" class="banner-pill" :class="isEditEnabled === true ? 'pill-on' : (isEditEnabled === false ? 'pill-off' : '')">
               <el-icon><component :is="isEditEnabled ? CircleCheck : CircleClose" /></el-icon>
-              {{ isEditEnabled ? '已启用' : '已禁用' }}
+              {{ isEditEnabled ? t('goproxy.statusEnabled') : t('goproxy.statusDisabled') }}
             </span>
             <span v-else class="banner-pill pill-new">
-              <el-icon><Plus /></el-icon> 新建
+              <el-icon><Plus /></el-icon> {{ t('goproxy.new') }}
             </span>
           </div>
         </div>
@@ -208,36 +208,36 @@
         <div class="form-section">
           <div class="form-section-title">
             <span class="section-icon section-icon--info"><el-icon><Box /></el-icon></span>
-            <span>基本信息</span>
-            <span class="section-meta">必填</span>
+            <span>{{ t('goproxy.basicInfo') }}</span>
+            <span class="section-meta">{{ t('common.required') }}</span>
           </div>
           <div class="form-grid two">
             <div class="form-group">
               <label class="form-label">
-                代理名称 <span class="req">*</span>
+                {{ t('goproxy.proxyName') }} <span class="req">*</span>
               </label>
-              <el-input v-model="editForm.name" size="large" placeholder="例如：dockerhub" class="form-input" />
-              <p class="form-hint">唯一标识，用于区分不同代理</p>
+              <el-input v-model="editForm.name" size="large" :placeholder="t('goproxy.proxyNamePlaceholder')" class="form-input" />
+              <p class="form-hint">{{ t('goproxy.proxyNameHint') }}</p>
             </div>
             <div class="form-group">
               <label class="form-label">
-                上游地址 <span class="req">*</span>
+                {{ t('goproxy.upstreamAddr') }} <span class="req">*</span>
               </label>
-              <el-input v-model="editForm.upstream" size="large" placeholder="例如：https://registry-1.docker.io" class="form-input" />
-              <p class="form-hint">真实镜像仓库地址，必须 http(s):// 开头</p>
+              <el-input v-model="editForm.upstream" size="large" :placeholder="t('goproxy.upstreamPlaceholder')" class="form-input" />
+              <p class="form-hint">{{ t('goproxy.upstreamHint') }}</p>
             </div>
             <div class="form-group full">
               <label class="form-label">
-                匹配域名 (Hosts) <span class="req">*</span>
+                {{ t('goproxy.matchHosts') }} <span class="req">*</span>
               </label>
               <el-input
                 v-model="editForm.hostsText"
                 type="textarea"
                 :rows="2"
-                placeholder="多个域名用逗号分隔，例如：hub.your_domain_name, registry-1.docker.io"
+                :placeholder="t('goproxy.hostsPlaceholder')"
                 class="form-input form-textarea"
               />
-              <p class="form-hint">客户端拉取这些域名时走此代理</p>
+              <p class="form-hint">{{ t('goproxy.hostsHint') }}</p>
             </div>
           </div>
         </div>
@@ -246,40 +246,40 @@
         <div class="form-section">
           <div class="form-section-title">
             <span class="section-icon section-icon--auth"><el-icon><Lock /></el-icon></span>
-            <span>认证 & 安全</span>
-            <span class="section-meta">可选</span>
+            <span>{{ t('goproxy.authSecurity') }}</span>
+            <span class="section-meta">{{ t('common.optional') }}</span>
           </div>
           <div class="form-grid two">
             <div class="form-group">
-              <label class="form-label">认证方式</label>
+              <label class="form-label">{{ t('goproxy.colAuth') }}</label>
               <el-select v-model="editForm.auth.type" size="large" class="form-input" style="width: 100%">
-                <el-option label="Token (Bearer，默认)" value="token" />
-                <el-option label="Basic 认证" value="basic" />
-                <el-option label="匿名" value="anonymous" />
+                <el-option :label="t('goproxy.authToken')" value="token" />
+                <el-option :label="t('goproxy.authBasic')" value="basic" />
+                <el-option :label="t('goproxy.authAnonymous')" value="anonymous" />
               </el-select>
-              <p class="form-hint">调用上游仓库时的身份验证方式</p>
+              <p class="form-hint">{{ t('goproxy.authMethodHint') }}</p>
             </div>
             <div class="form-group">
-              <label class="form-label">Token 缓存 (秒)</label>
+              <label class="form-label">{{ t('goproxy.tokenCache') }}</label>
               <el-input-number v-model="editForm.tokenCacheTTL" :min="0" :step="300" size="large" class="form-input" style="width: 100%" />
-              <p class="form-hint">0 表示不缓存</p>
+              <p class="form-hint">{{ t('goproxy.tokenCacheHint') }}</p>
             </div>
             <div class="form-group">
-              <label class="form-label">用户名</label>
-              <el-input v-model="editForm.auth.username" placeholder="Basic 认证用户名（可选）" size="large" class="form-input" />
-              <p class="form-hint">仅 Basic 认证时使用</p>
+              <label class="form-label">{{ t('goproxy.username') }}</label>
+              <el-input v-model="editForm.auth.username" :placeholder="t('goproxy.usernamePlaceholder')" size="large" class="form-input" />
+              <p class="form-hint">{{ t('goproxy.usernameHint') }}</p>
             </div>
             <div class="form-group">
-              <label class="form-label">密码</label>
+              <label class="form-label">{{ t('goproxy.password') }}</label>
               <el-input
                 v-model="editForm.auth.password"
                 type="password"
                 show-password
-                placeholder="Basic 认证密码（可选）"
+                :placeholder="t('goproxy.passwordPlaceholder')"
                 size="large"
                 class="form-input"
               />
-              <p class="form-hint">编辑模式留空表示保留原密码</p>
+              <p class="form-hint">{{ t('goproxy.passwordHint') }}</p>
             </div>
           </div>
 
@@ -287,9 +287,9 @@
             <div class="toggle-left">
               <div class="form-label toggle-label">
                 <el-icon class="toggle-warn-icon"><WarningFilled /></el-icon>
-                跳过 TLS 证书校验
+                {{ t('goproxy.skipTlsVerify') }}
               </div>
-              <p class="form-hint">自签 / 内部证书环境使用，存在安全风险</p>
+              <p class="form-hint">{{ t('goproxy.skipTlsHint') }}</p>
             </div>
             <el-switch v-model="editForm.insecureSkipVerify" class="toggle-switch" />
           </div>
@@ -298,9 +298,9 @@
 
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="large" plain @click="editVisible = false">取消</el-button>
+          <el-button size="large" plain @click="editVisible = false">{{ t('common.cancel') }}</el-button>
           <el-button type="primary" size="large" :loading="editSaving" @click="onSaveReg">
-            <el-icon><Document /></el-icon> 保存配置
+            <el-icon><Document /></el-icon> {{ t('goproxy.saveConfig') }}
           </el-button>
         </div>
       </template>
@@ -316,6 +316,9 @@ import {
   Connection, EditPen, Compass, Link, Lock, Key, Clock, User, WarningFilled, CircleCheck, CircleClose
 } from '@element-plus/icons-vue'
 import { getGoConfig, saveGoConfig, reloadGoProxy, goProxyStatus } from '../services'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // 表单数据 = 完整的 Go 端 Config（含 server + default + registries[]）
 const serverForm = reactive({
@@ -325,7 +328,9 @@ const serverForm = reactive({
   writeTimeout: 0,
   idleTimeout: 120,
   logLevel: 'normal',
-  registries: []
+  registries: [],
+  // 保留 IP 访问控制，避免保存代理设置时把它清空
+  accessControl: { mode: 'off', whitelist: [], blacklist: [] }
 })
 
 const loading = ref(false)
@@ -356,7 +361,7 @@ async function load() {
     const c = await getGoConfig()
     applyConfig(c)
   } catch (e) {
-    ElMessage.error('读取配置失败：' + (e.response?.data?.error || e.message))
+    ElMessage.error(t('goproxy.readConfigFailed') + (e.response?.data?.error || e.message))
   } finally {
     loading.value = false
   }
@@ -377,6 +382,13 @@ function applyConfig(c) {
   serverForm.idleTimeout = typeof s.idle_timeout === 'number' ? s.idle_timeout : 120
   serverForm.logLevel = c.log_level || 'normal'
   serverForm.default = c.default || ''
+  // 保留 IP 访问控制，避免保存代理设置时把它清空
+  const ac = c.access_control || {}
+  serverForm.accessControl = {
+    mode: ac.mode || 'off',
+    whitelist: Array.isArray(ac.whitelist) ? ac.whitelist : [],
+    blacklist: Array.isArray(ac.blacklist) ? ac.blacklist : []
+  }
   serverForm.registries = (Array.isArray(c.registries) ? c.registries : []).map(r => ({
     name: r.name || '',
     hosts: Array.isArray(r.hosts) ? r.hosts : [],
@@ -402,6 +414,12 @@ function buildPayload() {
     },
     default: serverForm.default,
     log_level: serverForm.logLevel,
+    // 携带 IP 访问控制，避免保存代理设置时把它清空
+    access_control: {
+      mode: serverForm.accessControl.mode || 'off',
+      whitelist: Array.isArray(serverForm.accessControl.whitelist) ? serverForm.accessControl.whitelist : [],
+      blacklist: Array.isArray(serverForm.accessControl.blacklist) ? serverForm.accessControl.blacklist : []
+    },
     registries: serverForm.registries.map(r => ({
       name: r.name,
       hosts: Array.isArray(r.hosts) ? r.hosts : [],
@@ -420,11 +438,11 @@ function buildPayload() {
 
 async function persist() {
   if (!serverForm.registries.length) {
-    throw new Error('请至少保留一个注册表代理')
+    throw new Error(t('goproxy.errKeepOneRegistry'))
   }
-  if (!serverForm.listen) throw new Error('请填写监听地址')
+  if (!serverForm.listen) throw new Error(t('goproxy.errFillListen'))
   if (serverForm.default && !serverForm.registries.some(r => r.name === serverForm.default)) {
-    throw new Error('默认注册表必须在已配置的代理列表中')
+    throw new Error(t('goproxy.errDefaultInList'))
   }
   await saveGoConfig(buildPayload())
   await load() // 重新拉取，后端会把密码脱敏
@@ -434,9 +452,9 @@ async function onSaveServer() {
   serverSaving.value = true
   try {
     await persist()
-    ElMessage.success('服务器设置已保存')
+    ElMessage.success(t('goproxy.serverSaved'))
   } catch (e) {
-    ElMessage.error('保存失败：' + (e.response?.data?.error || e.message))
+    ElMessage.error(t('goproxy.saveFailed') + (e.response?.data?.error || e.message))
   } finally {
     serverSaving.value = false
   }
@@ -446,7 +464,7 @@ async function onRefresh() {
   refreshing.value = true
   try {
     await load()
-    ElMessage.success('已刷新')
+    ElMessage.success(t('goproxy.refreshed'))
   } finally {
     refreshing.value = false
   }
@@ -456,10 +474,10 @@ async function onReload() {
   reloading.value = true
   try {
     const r = await reloadGoProxy()
-    ElMessage.success((r && r.message) || '已重新加载')
+    ElMessage.success((r && r.message) || t('goproxy.reloaded'))
     await load()
   } catch (e) {
-    ElMessage.error('重载失败：' + (e.response?.data?.error || e.message))
+    ElMessage.error(t('goproxy.reloadFailed') + (e.response?.data?.error || e.message))
   } finally {
     reloading.value = false
   }
@@ -523,15 +541,15 @@ function parseHosts(text) {
 }
 
 function validateEdit() {
-  if (!editForm.name) return '请填写代理名称'
+  if (!editForm.name) return t('goproxy.errFillProxyName')
   if (!/^[a-zA-Z0-9_\-]+$/.test(editForm.name)) {
-    return '代理名称仅支持字母、数字、下划线、连字符'
+    return t('goproxy.errProxyNameFormat')
   }
   const dup = serverForm.registries.findIndex((r, i) => r.name === editForm.name && i !== editIndex.value)
-  if (dup >= 0) return '代理名称重复'
-  if (!editForm.upstream) return '请填写上游地址'
-  if (!/^https?:\/\//.test(editForm.upstream)) return '上游地址必须以 http(s):// 开头'
-  if (!parseHosts(editForm.hostsText).length) return '请填写至少一个匹配域名'
+  if (dup >= 0) return t('goproxy.errProxyNameDup')
+  if (!editForm.upstream) return t('goproxy.errFillUpstream')
+  if (!/^https?:\/\//.test(editForm.upstream)) return t('goproxy.errUpstreamHttp')
+  if (!parseHosts(editForm.hostsText).length) return t('goproxy.errFillHosts')
   return null
 }
 
@@ -570,9 +588,9 @@ async function onSaveReg() {
     }
     await persist()
     editVisible.value = false
-    ElMessage.success('代理配置已保存')
+    ElMessage.success(t('goproxy.proxySaved'))
   } catch (e) {
-    ElMessage.error('保存失败：' + (e.response?.data?.error || e.message))
+    ElMessage.error(t('goproxy.saveFailed') + (e.response?.data?.error || e.message))
   } finally {
     editSaving.value = false
   }
@@ -582,28 +600,28 @@ async function onToggleReg(row) {
   const i = serverForm.registries.findIndex(r => r.name === row.name)
   if (i < 0) return
   const newEnabled = !isEnabled(serverForm.registries[i])
-  const action = newEnabled ? '启用' : '停用'
+  const action = newEnabled ? t('common.enabled') : t('goproxy.disable')
   try {
     await ElMessageBox.confirm(
-      `确认${action}代理「${row.name}」？`,
-      `${action}代理`,
+      t('goproxy.confirmToggle', { action, name: row.name }),
+      t('goproxy.toggleProxyTitle', { action }),
       { type: 'warning' }
     )
   } catch { return }
   serverForm.registries[i].enabled = newEnabled
   try {
     await persist()
-    ElMessage.success(`已${action}「${row.name}」`)
+    ElMessage.success(t('goproxy.toggled', { action, name: row.name }))
   } catch (e) {
-    ElMessage.error(`${action}失败：${e.response?.data?.error || e.message}`)
+    ElMessage.error(t('goproxy.toggleFailed', { action }) + (e.response?.data?.error || e.message))
   }
 }
 
 async function onDeleteReg(row) {
   try {
     await ElMessageBox.confirm(
-      `确认删除代理「${row.name}」？此操作不可恢复`,
-      '删除代理',
+      t('goproxy.confirmDelete', { name: row.name }),
+      t('goproxy.deleteProxyTitle'),
       { type: 'warning' }
     )
   } catch { return }
@@ -616,9 +634,9 @@ async function onDeleteReg(row) {
   }
   try {
     await persist()
-    ElMessage.success('已删除')
+    ElMessage.success(t('goproxy.deleted'))
   } catch (e) {
-    ElMessage.error('删除失败：' + (e.response?.data?.error || e.message))
+    ElMessage.error(t('goproxy.deleteFailed') + (e.response?.data?.error || e.message))
   }
 }
 

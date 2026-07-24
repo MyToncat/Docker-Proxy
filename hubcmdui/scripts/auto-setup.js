@@ -94,7 +94,7 @@ async function autoSetup() {
     console.log('🌐 启动 HubCmdUI 服务器...');
     console.log('📍 访问地址: http://localhost:3000');
     console.log('🔧 管理面板: http://localhost:3000/admin');
-    console.log('👤 默认账户: root / admin@123\n');
+    console.log('👤 默认账户: root（请尽快修改默认密码）\n');
     
     // 启动主服务器
     try {

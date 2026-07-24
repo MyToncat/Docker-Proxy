@@ -6,13 +6,16 @@ const router = express.Router();
 const userServiceDB = require('../services/userServiceDB');
 const logger = require('../logger');
 const { requireLogin } = require('../middleware/auth');
+const { generateCaptchaCode, verifyCaptcha, storeCaptcha, consumeCaptcha } = require('../lib/captcha');
+const { DEFAULT_USERNAME, DEFAULT_PASSWORD, isDefaultUsername, isDefaultPassword, isWeakPassword, isCommonUsername, isReservedUsername } = require('../lib/security');
 
 // 登录验证
 router.post('/login', async (req, res) => {
-  const { username, password, captcha } = req.body;
-  
-  // 验证码检查
-  if (req.session.captcha !== parseInt(captcha)) {
+  const { username, password, captcha, captchaId } = req.body;
+
+  // 验证码检查（基于服务端 captchaId，与 session 解耦，避免并发请求抢走
+  // session cookie 导致校验失败）
+  if (!verifyCaptcha(consumeCaptcha(captchaId), captcha)) {
     logger.warn(`Captcha verification failed for user: ${username}`);
     return res.status(401).json({ error: '验证码错误' });
   }
@@ -71,11 +74,25 @@ router.post('/change-password', requireLogin, async (req, res) => {
   if (!passwordRegex.test(newPassword)) {
     return res.status(400).json({ error: 'Password must be 8-16 characters long and contain at least one letter, one number, and one special character' });
   }
-  
+
+  // 不允许修改为系统默认密码（初始化凭据）
+  if (isDefaultPassword(newPassword)) {
+    return res.status(400).json({ error: `不允许修改为系统默认密码（${DEFAULT_PASSWORD}）` });
+  }
+
+  // 弱口令检测：允许修改，但标记 warning，由前端弹窗提醒用户
+  const weakPassword = isWeakPassword(newPassword);
+
   try {
     // 使用SQLite数据库服务修改密码
     await userServiceDB.changePassword(req.session.user.username, currentPassword, newPassword);
-    res.json({ success: true });
+    logger.info(`用户 ${req.session.user.username} 密码修改成功，强制销毁会话以要求重新登录`);
+    // 密码已变更，旧会话存在安全风险，强制重新登录
+    res.clearCookie('connect.sid');
+    req.session.destroy(err => {
+      if (err) logger.error('销毁会话失败:', err);
+      res.json({ success: true, requireReLogin: true, warning: weakPassword, warningType: weakPassword ? 'weak_password' : null });
+    });
   } catch (error) {
     logger.error('修改密码失败:', error);
     res.status(500).json({ error: '修改密码失败', details: error.message });
@@ -91,16 +108,31 @@ router.post('/change-username', requireLogin, async (req, res) => {
   if (!usernameRegex.test(newUsername)) {
     return res.status(400).json({ error: '用户名格式不正确（3-20位，只能包含字母、数字和下划线）' });
   }
-  
+
+  // 不允许修改为系统默认用户名（如 root）
+  if (isDefaultUsername(newUsername)) {
+    return res.status(400).json({ error: `不允许修改为系统默认用户名（${DEFAULT_USERNAME}）` });
+  }
+
+  // 不允许修改为系统保留用户名（如 admin）：保留名不可被任何用户注册/占用
+  if (isReservedUsername(newUsername)) {
+    return res.status(400).json({ error: `「${newUsername}」为系统保留用户名，不可使用` });
+  }
+
+  // 常见用户名检测：允许修改，但标记 warning，由前端弹窗提醒用户
+  const commonUsername = isCommonUsername(newUsername);
+
   try {
     const currentUsername = req.session.user.username;
     const result = await userServiceDB.changeUsername(currentUsername, newUsername, password);
-    
-    // 更新session中的用户名
-    req.session.user.username = newUsername;
-    
-    logger.info(`用户 ${currentUsername} 已修改用户名为 ${newUsername}`);
-    res.json({ success: true, newUsername });
+
+    logger.info(`用户 ${currentUsername} 已修改用户名为 ${newUsername}，强制销毁会话以要求重新登录`);
+    // 用户名已变更，旧会话中记录的身份已失效，强制重新登录
+    res.clearCookie('connect.sid');
+    req.session.destroy(err => {
+      if (err) logger.error('销毁会话失败:', err);
+      res.json({ success: true, requireReLogin: true, newUsername, warning: commonUsername, warningType: commonUsername ? 'common_username' : null });
+    });
   } catch (error) {
     logger.error('修改用户名失败:', error);
     res.status(400).json({ error: error.message || '修改用户名失败' });
@@ -121,10 +153,8 @@ router.get('/user-info', requireLogin, async (req, res) => {
 
 // 生成验证码
 router.get('/captcha', (req, res) => {
-  const num1 = Math.floor(Math.random() * 10);
-  const num2 = Math.floor(Math.random() * 10);
-  const captcha = `${num1} + ${num2} = ?`;
-  req.session.captcha = num1 + num2;
+  const captcha = generateCaptchaCode(4);
+  const captchaId = storeCaptcha(captcha); // 与 session 解耦存储
   
   // 确保serverStartTime已初始化
   if (!global.serverStartTime) {
@@ -134,6 +164,7 @@ router.get('/captcha', (req, res) => {
   
   res.json({ 
     captcha,
+    captchaId,
     serverStartTime: global.serverStartTime
   });
 });
@@ -165,10 +196,10 @@ router.get('/check-session', (req, res) => {
 
 // 请求密码重置令牌（需要用户名验证）
 router.post('/request-reset-token', async (req, res) => {
-  const { username, captcha } = req.body;
+  const { username, captcha, captchaId } = req.body;
   
-  // 验证码检查
-  if (req.session.captcha !== parseInt(captcha)) {
+  // 验证码检查（基于服务端 captchaId，与 session 解耦）
+  if (!verifyCaptcha(consumeCaptcha(captchaId), captcha)) {
     logger.warn(`重置密码验证码验证失败: ${username}`);
     return res.status(401).json({ error: '验证码错误' });
   }

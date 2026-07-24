@@ -166,3 +166,6 @@ hubcmdui/data/app.db
 /data/
 build-images.sh
 go-proxy/config.local.yaml
+.workb*
+hubcmdui/.workb*
+go-proxy/go-proxy

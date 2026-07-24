@@ -5,7 +5,10 @@ RUN npm install --omit=dev
 COPY src/package.json src/package-lock.json* ./src/
 RUN cd src && npm install
 COPY src/ ./src/
-RUN cd src && npm run build
+
+COPY config/ ./config/
+
+RUN echo "$CACHEBUST" >/dev/null && cd src && npm run build
 
 
 FROM node:20-alpine

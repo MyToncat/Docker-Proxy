@@ -150,7 +150,13 @@ class ConfigServiceDB {
         telegramToken: '',
         telegramChatId: '',
         monitorInterval: 60,
-        isEnabled: false
+        isEnabled: false,
+        // 网络流量告警（默认关闭，阈值留空表示不限制）
+        enableTrafficAlert: false,
+        rxRateThreshold: 100,    // MB/s
+        txRateThreshold: 100,    // MB/s
+        dailyTrafficThreshold: 500, // GB/天
+        singleIpDailyThreshold: 100 // GB/天/客户端IP
       }
     };
   }
@@ -216,10 +222,12 @@ class ConfigServiceDB {
 
   /**
    * 获取监控配置
+   * 与默认值合并：旧数据库中可能缺少后续新增字段（如流量告警），避免返回 undefined。
    */
   async getMonitoringConfig() {
     try {
-      return await this.getConfig('monitoringConfig') || this.getDefaultConfig().monitoringConfig;
+      const saved = await this.getConfig('monitoringConfig') || {};
+      return { ...this.getDefaultConfig().monitoringConfig, ...saved };
     } catch (error) {
       logger.error('获取监控配置失败:', error);
       return this.getDefaultConfig().monitoringConfig;

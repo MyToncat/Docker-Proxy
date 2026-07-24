@@ -5,7 +5,7 @@
 # 
 #         USAGE: ./DockerProxy_Install.sh
 #
-#   DESCRIPTION: 自建Docker镜像加速服务，基于官方 registry 一键部署Docker、K8s、Quay、Ghcr、Nvcr镜像加速\管理服务.支持免服务器部署到Render.
+#   DESCRIPTION: 自建Docker镜像加速服务，零磁盘缓存，流量监控告警、代理管理、服务资源管理等功能。一键部署Docker、K8s、Quay、Ghcr、Nvcr镜像加速\管理服务.支持免服务器部署到Render.
 # 
 #  ORGANIZATION: DingQz dqzboy.com 浅时光博客
 #===============================================================================
@@ -160,7 +160,7 @@ RECORDS=("ui" "hub" "gcr" "ghcr" "k8sgcr" "k8s" "quay" "mcr" "elastic" "nvcr")
 attempts=0
 maxAttempts=3
 
-# go-proxy 专用管理服务菜单（仅 2 个 compose 服务：reg-go-proxy / hubcmd-ui）
+# go-proxy 专用管理服务菜单（仅 2 个 compose 服务：go-proxy / hubcmd-ui）
 function PROXY_SVC_MENU() {
     echo -e "${YELLOW}-------------------------------------------------${RESET}"
     echo -e "${GREEN}1)${RESET} ${BOLD}Docker 镜像加速 (代理服务)${RESET}"
@@ -177,10 +177,11 @@ function PROXY_SER_MENU() {
     echo -e "${YELLOW}-------------------------------------------------${RESET}"
 }
 
-# 定义Docker容器服务名称（go-proxy 模型：仅 2 个 compose 服务）
+# 定义 compose 服务名称（注意：必须是 compose 的 service 名，而非 container_name）
+# go-proxy 模型：仅 2 个服务 -> go-proxy (代理服务) / hubcmd-ui (管理面板)
 CONTAINER_SERVICES() {
     services=(
-        "reg-go-proxy"
+        "go-proxy"
         "hubcmd-ui"
     )
 }
@@ -1649,6 +1650,10 @@ else
 # Docker 镜像加速管理 API 令牌 (请妥善保管, 切勿泄露)
 GO_PROXY_ADMIN_TOKEN=$token
 
+# 真实宿主机名（仪表盘「主机」展示用）。默认取安装时宿主机的 hostname，
+# 如需修改可手动改成任意名称后重新 up -d。
+HOST_NAME=$(hostname)
+
 # 镜像地址 (可选覆盖, 等号右侧为默认值)
 # 若构建时未选择 latest 标签, 请在此显式指定对应标签, 否则默认拉取 :latest 会失败
 REGISTRY_IMAGE=dqzboy/registry:latest
@@ -1659,9 +1664,9 @@ EOF
 fi
 }
 
-# 部署 Docker 镜像加速（go-proxy + hubcmd-ui），直接拉取镜像启动，无需克隆仓库
+# 部署 Docker 镜像加速，直接拉取镜像启动，无需克隆仓库
 function INSTALL_DOCKER_PROXY() {
-SEPARATOR "部署 Docker 镜像加速 (go-proxy + hubcmd-ui)"
+SEPARATOR "部署 Docker 镜像加速"
 CHECK_COMPOSE_CMD
 # 选择下载源（国外/国内）
 local COMPOSE_SRC="$GITRAW"
@@ -1683,7 +1688,7 @@ fi
 
 GEN_ENV
 PROXY_HTTP
-INFO "拉取镜像并启动 Docker 镜像加速 (go-proxy + hubcmd-ui) ..."
+INFO "拉取镜像并启动 Docker 镜像加速 ..."
 $DOCKER_COMPOSE_CMD -f "${PROXY_DIR}/${DOCKER_COMPOSE_FILE}" up -d
 if [ $? -ne 0 ]; then
     ERROR "服务启动失败，请通过查看日志确认原因: $DOCKER_COMPOSE_CMD -f ${PROXY_DIR}/${DOCKER_COMPOSE_FILE} logs"
@@ -1702,21 +1707,216 @@ function STOP_REMOVE_CONTAINER() {
     fi
 }
 
-function UPDATE_CONFIG() {
-while true; do
-    read -e -p "$(WARN "是否重启服务以应用配置变更（配置在宿主机 ${PROXY_DIR}/config/go-proxy/ 或网页管理面板修改）? ${PROMPT_YES_NO}")" update_conf
-    case "$update_conf" in
-        y|Y )
-            RESTART_CONTAINER
-            INFO "服务已重启，配置已生效。"
-            break;;
-        n|N )
-            WARN "退出配置更新操作。"
-            break;;
-        * )
-            INFO "请输入 ${LIGHT_GREEN}y${RESET} 或 ${LIGHT_YELLOW}n${RESET}";;
+# go-proxy 运行时配置文件（宿主机路径，由容器挂载 /app/config.d/config.yaml）
+GO_PROXY_CONFIG="${PROXY_DIR}/config/go-proxy/config.yaml"
+# go-proxy 出口代理写在 compose 的 go-proxy 服务环境变量里
+COMPOSE_FILE="${PROXY_DIR}/${DOCKER_COMPOSE_FILE}"
+
+# 校验 YAML 语法（依赖 python3 或 yq，缺失则跳过）
+function VALIDATE_YAML() {
+    local f="$1"
+    if command -v python3 &>/dev/null; then
+        if ! python3 -c "import yaml,sys; yaml.safe_load(open('$f'))" &>/dev/null; then
+            ERROR "配置文件 YAML 语法校验失败，请检查刚做的修改！"
+            return 1
+        fi
+    elif command -v yq &>/dev/null; then
+        if ! yq '.' "$f" >/dev/null 2>&1; then
+            ERROR "配置文件 YAML 语法校验失败，请检查刚做的修改！"
+            return 1
+        fi
+    fi
+    INFO "配置文件 YAML 语法校验通过。"
+    return 0
+}
+
+# 1) 直接用编辑器打开 config.yaml 手动修改
+function EDIT_CONFIG_FILE() {
+    if [[ ! -f "$GO_PROXY_CONFIG" ]]; then
+        ERROR "配置文件不存在: ${LIGHT_BLUE}${GO_PROXY_CONFIG}${RESET}"
+        WARN "请先执行「安装服务」，配置会在首次启动时自动生成。"
+        return 1
+    fi
+    local editor="${EDITOR:-${VISUAL:-vi}}"
+    INFO "即将用 ${LIGHT_CYAN}${editor}${RESET} 打开配置文件"
+    INFO "保存退出后生效；若想放弃修改，进入后直接 ${LIGHT_YELLOW}:q!${RESET} 退出即可"
+    sleep 1
+    "$editor" "$GO_PROXY_CONFIG"
+    VALIDATE_YAML "$GO_PROXY_CONFIG"
+}
+
+# 2) 设置 Docker Hub 加速账号（仅 dockerhub 块含 username/password，全局替换安全）
+function SET_DOCKERHUB_AUTH() {
+    if [[ ! -f "$GO_PROXY_CONFIG" ]]; then
+        ERROR "配置文件不存在: ${LIGHT_BLUE}${GO_PROXY_CONFIG}${RESET}"
+        return 1
+    fi
+    echo
+    INFO "设置 Docker Hub 账号密码，用于提升匿名拉取频率限制（留空则清除）"
+    read -e -p "$(INFO "Docker Hub 用户名: ")" dh_user
+    read -e -p "$(INFO "Docker Hub 密码 / Token: ")" dh_pass
+    # 转义 sed 特殊字符（\ / & |）
+    local u_esc pw_esc
+    u_esc=$(printf '%s' "$dh_user" | sed -e 's/[\\/&|]/\\&/g')
+    pw_esc=$(printf '%s' "$dh_pass" | sed -e 's/[\\/&|]/\\&/g')
+    sed -i 's|^\([[:space:]]*\)username:.*|\1username: "'"${u_esc}"'"|' "$GO_PROXY_CONFIG"
+    sed -i 's|^\([[:space:]]*\)password:.*|\1password: "'"${pw_esc}"'"|' "$GO_PROXY_CONFIG"
+    VALIDATE_YAML "$GO_PROXY_CONFIG" || return 1
+    if [[ -n "$dh_user" ]]; then
+        INFO "Docker Hub 账号已写入: ${LIGHT_CYAN}${dh_user}${RESET}"
+    else
+        INFO "已清除 Docker Hub 账号配置"
+    fi
+}
+
+# 3) 切换日志级别
+function SET_LOG_LEVEL() {
+    if [[ ! -f "$GO_PROXY_CONFIG" ]]; then
+        ERROR "配置文件不存在: ${LIGHT_BLUE}${GO_PROXY_CONFIG}${RESET}"
+        return 1
+    fi
+    echo
+    echo -e "  1) ${BOLD}quiet${RESET}  - 仅输出错误"
+    echo -e "  2) ${BOLD}normal${RESET} - 默认，跳过 blob 噪声"
+    echo -e "  3) ${BOLD}debug${RESET}  - 输出全部请求"
+    read -e -p "$(INFO "选择日志级别 > ")" ll_choice
+    local lvl
+    case "$ll_choice" in
+        1) lvl=quiet ;;
+        2) lvl=normal ;;
+        3) lvl=debug ;;
+        *) ERROR "无效选项"; return 1 ;;
     esac
-done
+    sed -i -E "s|^log_level:.*|log_level: ${lvl}|" "$GO_PROXY_CONFIG"
+    VALIDATE_YAML "$GO_PROXY_CONFIG" || return 1
+    INFO "日志级别已设置为: ${LIGHT_CYAN}${lvl}${RESET}"
+}
+
+# 4) 配置 go-proxy 容器出口代理（上游 registry 走本地代理访问）
+#    注意：compose 中 go-proxy 与 hubcmd-ui 两个服务都有代理占位符，
+#    必须用 awk 将修改限定在 go-proxy 服务块内，避免误伤 hubcmd-ui。
+function SET_UPSTREAM_PROXY() {
+    if [[ ! -f "$COMPOSE_FILE" ]]; then
+        ERROR "compose 文件不存在: ${LIGHT_BLUE}${COMPOSE_FILE}${RESET}"
+        return 1
+    fi
+    echo
+    INFO "为 go-proxy 容器配置出口代理，用于通过本地代理（如科学上网）访问上游 registry"
+    echo -e "  1) ${BOLD}设置${RESET} 上游代理"
+    echo -e "  2) ${BOLD}清除${RESET} 上游代理"
+    read -e -p "$(INFO "选择操作 > ")" up_choice
+    case "$up_choice" in
+        1)
+            read -e -p "$(INFO "输入代理地址 ${LIGHT_MAGENTA}(eg: 127.0.0.1:7890)${RESET}: ")" px
+            while [[ -z "$px" ]]; do
+                WARN "代理地址不能为空"
+                read -e -p "$(INFO "输入代理地址: ")" px
+            done
+            local px_esc
+            px_esc=$(printf '%s' "$px" | sed -e 's/[\\/&|]/\\&/g')
+            awk -v px="$px_esc" '
+                /^  go-proxy:/ { in_gp=1 }
+                in_gp && /^  [a-zA-Z0-9_-]+:/ && $0 !~ /go-proxy:/ { in_gp=0 }
+                in_gp && /^[[:space:]]*#? ?- HTTP_PROXY=http:\/\// {
+                    sub(/^[[:space:]]*#? ?- HTTP_PROXY=http:\/\/.*/, "      - HTTP_PROXY=http://" px)
+                }
+                in_gp && /^[[:space:]]*#? ?- HTTPS_PROXY=http:\/\// {
+                    sub(/^[[:space:]]*#? ?- HTTPS_PROXY=http:\/\/.*/, "      - HTTPS_PROXY=http://" px)
+                }
+                { print }
+            ' "$COMPOSE_FILE" > "$COMPOSE_FILE.tmp" && mv "$COMPOSE_FILE.tmp" "$COMPOSE_FILE"
+            INFO "已为 go-proxy 设置出口代理: ${LIGHT_CYAN}http://${px}${RESET}（需 up -d 生效）"
+            ;;
+        2)
+            awk '
+                /^  go-proxy:/ { in_gp=1 }
+                in_gp && /^  [a-zA-Z0-9_-]+:/ && $0 !~ /go-proxy:/ { in_gp=0 }
+                in_gp && /^[[:space:]]*- HTTP_PROXY=http:\/\// {
+                    sub(/^[[:space:]]*- HTTP_PROXY=http:\/\/.*/, "      # - HTTP_PROXY=http://host:port")
+                }
+                in_gp && /^[[:space:]]*- HTTPS_PROXY=http:\/\// {
+                    sub(/^[[:space:]]*- HTTPS_PROXY=http:\/\/.*/, "      # - HTTPS_PROXY=http://host:port")
+                }
+                { print }
+            ' "$COMPOSE_FILE" > "$COMPOSE_FILE.tmp" && mv "$COMPOSE_FILE.tmp" "$COMPOSE_FILE"
+            INFO "已清除 go-proxy 出口代理配置"
+            ;;
+        *) ERROR "无效选项"; return 1 ;;
+    esac
+}
+
+# 应用 compose 配置变更（env 变化需 up -d 而非仅 restart）
+function APPLY_COMPOSE_CHANGES() {
+    CHECK_COMPOSE_CMD
+    $DOCKER_COMPOSE_CMD -f "$COMPOSE_FILE" up -d
+    if [ $? -ne 0 ]; then
+        ERROR "服务更新失败，请通过日志确认原因: $DOCKER_COMPOSE_CMD -f $COMPOSE_FILE logs"
+        return 1
+    fi
+    INFO "compose 配置已应用，服务已重启。"
+}
+
+# 更新配置：进入子菜单完成实际修改，退出时统一提示是否应用
+function UPDATE_CONFIG() {
+    local cfg_changed=0
+    local compose_changed=0
+    SEPARATOR "更新配置"
+    echo
+    WARN "建议：配置变更请优先在 ${LIGHT_CYAN}Hubcmd-UI 管理后台${RESET} 的 ${LIGHT_GREEN}『代理管理』${RESET} 中进行——后台自带校验与热更新，更安全不易出错。"
+    WARN "通过本脚本直接修改配置文件属于 ${LIGHT_RED}高级应急操作${RESET}，${BOLD}不建议${RESET} 常规使用，请在确实无法访问后台时再继续。"
+    echo
+    read -e -p "$(WARN "是否仍要使用脚本修改配置? ${PROMPT_YES_NO}")" uc_confirm
+    case "$uc_confirm" in
+        y|Y ) INFO "已确认，继续进入脚本配置编辑。" ;;
+        * ) WARN "已取消，返回主菜单。"; return ;;
+    esac
+    echo
+    while true; do
+        echo -e "  配置文件: ${LIGHT_BLUE}${GO_PROXY_CONFIG}${RESET}"
+        echo
+        echo -e "  1) ${BOLD}直接编辑${RESET} 加速服务配置 (config.yaml)"
+        echo -e "  2) 设置 ${BOLD}Docker Hub 加速账号${RESET} (提升匿名拉取频率限制)"
+        echo -e "  3) 切换 ${BOLD}日志级别${RESET} (quiet / normal / debug)"
+        echo -e "  4) 配置 ${BOLD}上游 HTTP/HTTPS 代理${RESET} (go-proxy 容器出口)"
+        echo -e "  0) ${LIGHT_YELLOW}返回${RESET} 主菜单"
+        echo
+        read -e -p "$(INFO "请选择操作 > ")" uc_choice
+        case "$uc_choice" in
+            1) EDIT_CONFIG_FILE; cfg_changed=1 ;;
+            2) SET_DOCKERHUB_AUTH; cfg_changed=1 ;;
+            3) SET_LOG_LEVEL; cfg_changed=1 ;;
+            4) SET_UPSTREAM_PROXY; compose_changed=1 ;;
+            0) break ;;
+            *) ERROR "无效选项，请重新输入" ;;
+        esac
+        echo
+    done
+
+    if [[ "$cfg_changed" -eq 1 || "$compose_changed" -eq 1 ]]; then
+        echo
+        if [[ "$compose_changed" -eq 1 ]]; then
+            read -e -p "$(WARN "检测到 compose 配置已变更，是否执行 ${LIGHT_CYAN}up -d${RESET} 应用并重启服务? ${PROMPT_YES_NO}")" apply_ch
+        else
+            read -e -p "$(WARN "是否重启服务以应用配置变更? ${PROMPT_YES_NO}")" apply_ch
+        fi
+        case "$apply_ch" in
+            y|Y )
+                if [[ "$compose_changed" -eq 1 ]]; then
+                    APPLY_COMPOSE_CHANGES
+                else
+                    RESTART_CONTAINER
+                fi
+                INFO "配置已应用并生效。"
+                ;;
+            n|N )
+                WARN "已保存配置修改，但未重启服务，变更将在下次重启后生效。"
+                ;;
+            * )
+                INFO "请输入 ${LIGHT_GREEN}y${RESET} 或 ${LIGHT_YELLOW}n${RESET}" ;;
+        esac
+    else
+        INFO "未做任何修改。"
+    fi
 }
 
 function REMOVE_NONE_TAG() {
@@ -2112,7 +2312,7 @@ CONTAIENR_LOGS() {
     selected_services=()
     PROXY_SER_MENU
 
-    read -e -p "$(INFO "输入序号选择对应服务,${LIGHT_YELLOW}空格分隔${RESET}多个选项. ${LIGHT_CYAN}all选择所有${RESET} > ")"  restart_service
+    read -e -p "$(INFO "输入序号选择对应服务,${LIGHT_YELLOW}空格分隔${RESET}多个选项 > ")"  restart_service
 
     if  [[ "$restart_service" == "0" ]]; then
         WARN "退出查看容器服务日志操作!"
@@ -2859,9 +3059,7 @@ case $main_choice in
         SVC_MGMT
         ;;
     4)
-        SEPARATOR "更新配置"
         UPDATE_CONFIG
-        SEPARATOR "更新完成"
         ;;
     5)
         UNI_DOCKER_SERVICE

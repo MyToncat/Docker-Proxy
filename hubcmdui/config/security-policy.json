@@ -1,0 +1,22 @@
+{
+  "defaultUsername": "root",
+  "defaultPassword": "admin@123",
+  "reservedUsernames": ["admin"],
+  "weakPasswords": [
+    "123456", "12345678", "123456789", "1234567890",
+    "password", "passw0rd", "p@ssw0rd", "passwort",
+    "qwerty", "qwerty123", "qwertyuiop",
+    "111111", "000000", "123123", "112233", "123321",
+    "abc123", "a123456", "123456a",
+    "admin123", "admin@123", "root123", "rootme",
+    "letmein", "iloveyou", "1q2w3e4r", "1qaz2wsx",
+    "changeme", "welcome", "dragon", "monkey", "sunshine",
+    "login", "test123", "test@1234", "password123", "admin"
+  ],
+  "commonUsernames": [
+    "admin", "administrator", "root", "guest", "test", "user", "user1",
+    "admin1", "root1", "manager", "superuser", "sysadmin", "operator",
+    "sa", "default", "support", "webadmin", "ftpuser", "oracle",
+    "postgres", "mysql", "demo", "temp", "nobody", "system", "service"
+  ]
+}

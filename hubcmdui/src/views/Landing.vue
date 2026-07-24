@@ -1,5 +1,52 @@
 <template>
   <div class="landing">
+    <div class="topbar-float">
+      <LangSwitch variant="nav" />
+      <div class="theme-toggle-wrap">
+        <button
+          class="hd-pill theme-btn"
+          type="button"
+          :aria-label="themeLabel"
+          :title="themeLabel"
+          @click="themeOpen = !themeOpen"
+        >
+          <span class="theme-ic">
+            <svg v-if="mode === 'light'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </svg>
+            <svg v-else-if="mode === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <path d="M8 21h8M12 17v4" />
+            </svg>
+          </span>
+          <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+        <div v-if="themeOpen" class="theme-menu" @mousedown.prevent>
+          <button class="theme-item" :class="{ active: mode === 'light' }" type="button" @click="pickTheme('light')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>
+            <span>{{ t('layout.themeLight') }}</span>
+            <svg v-if="mode === 'light'" class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+          </button>
+          <button class="theme-item" :class="{ active: mode === 'dark' }" type="button" @click="pickTheme('dark')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+            <span>{{ t('layout.themeDark') }}</span>
+            <svg v-if="mode === 'dark'" class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+          </button>
+          <button class="theme-item" :class="{ active: mode === 'auto' }" type="button" @click="pickTheme('auto')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><path d="M8 21h8M12 17v4" /></svg>
+            <span>{{ t('layout.themeAuto') }}</span>
+            <svg v-if="mode === 'auto'" class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+          </button>
+        </div>
+      </div>
+      <div v-if="themeOpen" class="theme-backdrop" @click="themeOpen = false"></div>
+    </div>
     <!-- ============== 顶部导航（Glassmorphism 胶囊菜单） ============== -->
     <header class="hd">
       <div class="hd-inner">
@@ -13,12 +60,12 @@
           <span class="hd-logo-text">PROXY</span>
         </a>
         <nav class="hd-nav">
-          <a href="/" class="hd-pill active" aria-label="首页">
+          <a href="/" class="hd-pill active" :aria-label="t('landing.home')">
             <svg class="pill-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M3 11.5 12 4l9 7.5"/>
               <path d="M5 10v10h14V10"/>
             </svg>
-            <span>首页</span>
+            <span>{{ t('landing.home') }}</span>
           </a>
           <a
             v-for="m in menuItems"
@@ -45,9 +92,9 @@
 
     <!-- ============== Hero（普通块级，滚动时正常随页面滚走，不跟随） ============== -->
     <section class="hero">
-      <h1 class="hero-title">Docker 镜像加速服务</h1>
+      <h1 class="hero-title">Docker {{ t('landing.heroTitle') }}</h1>
       <p class="hero-sub">
-        快速拉取 Docker 镜像，无需担心网络问题，轻松部署你的容器应用
+        {{ t('landing.heroSub') }}
       </p>
     </section>
 
@@ -55,14 +102,14 @@
     <div class="tab-container">
       <div class="tab-row">
         <button
-          v-for="t in tabs"
-          :key="t.id"
+          v-for="tabBtn in tabs"
+          :key="tabBtn.id"
           class="tab"
-          :class="{ active: tab === t.id }"
-          @click="tab = t.id"
+          :class="{ active: tab === tabBtn.id }"
+          @click="tab = tabBtn.id"
         >
-          <i :class="['fas', t.icon]"></i>
-          <span>{{ t.label }}</span>
+          <i :class="['fas', tabBtn.icon]"></i>
+          <span>{{ tabBtn.label }}</span>
         </button>
       </div>
     </div>
@@ -79,9 +126,9 @@
               <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
               <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
             </svg>
-            镜像加速
+            {{ t('landing.accelerate') }}
           </h2>
-          <p class="accel-hero__sub">输入任意镜像名称，自动识别 Registry 并生成一键加速命令</p>
+          <p class="accel-hero__sub">{{ t('landing.accelSub') }}</p>
         </div>
         <!-- 复用 .search-bar：与「镜像搜索」输入框完全一致的 56px / focus ring / 渐变 CTA -->
         <div class="search-bar">
@@ -94,26 +141,26 @@
             v-model="imageInput"
             type="text"
             class="search-bar__input"
-            placeholder="输入镜像名称，例如：nginx 或 mysql:5.7"
+            :placeholder="t('landing.imageInputPlaceholder')"
             @keyup.enter="generateCommands"
           />
           <button class="search-bar__cta" @click="generateCommands">
-            <i class="fas fa-bolt"></i> 获取加速命令
+            <i class="fas fa-bolt"></i> {{ t('landing.getAccelCmd') }}
           </button>
         </div>
         <div class="search-hint">
-          <span v-if="registriesReady">支持 {{ registryHintNames }}</span>
+          <span v-if="registriesReady">{{ t('landing.supportedRegistries', { names: registryHintNames }) }}</span>
           <span v-else class="search-hint__skel" aria-hidden="true"></span>
           <span class="dot">·</span>
-          <span v-if="registriesReady">输入示例：{{ registryExampleHint }}</span>
+          <span v-if="registriesReady">{{ t('landing.inputExample', { example: registryExampleHint }) }}</span>
           <span v-else class="search-hint__skel search-hint__skel--short" aria-hidden="true"></span>
         </div>
       </div>
 
       <div v-if="accel" class="result-wrap">
-        <h2 class="result-title"><i class="fas fa-terminal"></i> 加速命令</h2>
+        <h2 class="result-title"><i class="fas fa-terminal"></i> {{ t('landing.accelCmdTitle') }}</h2>
         <div v-if="accel.detected" class="detect-badge" :style="accel.badgeStyle">
-          <i class="fas fa-check-circle"></i> 检测到 <strong>{{ accel.detectedName }}</strong> 镜像
+          <i class="fas fa-check-circle"></i> {{ t('landing.detected') }}<strong>{{ accel.detectedName }}</strong>{{ t('landing.image') }}
         </div>
         <div v-for="(c, i) in accel.commands" :key="c.type" class="cmd-card" :class="`cmd-${c.type}`">
           <div class="cmd-side"></div>
@@ -127,7 +174,7 @@
                 </div>
               </div>
               <button class="copy-btn" @click="copyCmd(c.text)">
-                <i class="fas fa-copy"></i> 复制
+                <i class="fas fa-copy"></i> {{ t('common.copy') }}
               </button>
             </div>
             <div class="cmd-code">
@@ -141,7 +188,7 @@
         <div class="quick-exec">
           <div class="quick-title">
             <i class="fas fa-bolt"></i>
-            快捷执行：复制「代理拉取 → 重命名 → 删除代理」三条命令，依次执行即可重命名为原始镜像名
+            {{ t('landing.quickExecTitle') }}
           </div>
           <div class="quick-grid">
             <div
@@ -159,25 +206,25 @@
 
       <div v-else class="empty-hint">
         <i class="fas fa-rocket"></i>
-        <p>在上方输入镜像名称，点击「获取加速命令」开始</p>
+        <p>{{ t('landing.enterImageToStart', { cmd: t('landing.getAccelCmd') }) }}</p>
       </div>
 
       <!-- 特性卡（获取到加速命令后自动隐藏，回到空态时重新显示） -->
       <div class="features" v-if="!accel">
         <div class="feature-card">
           <i class="fas fa-tachometer-alt"></i>
-          <h3>高速拉取</h3>
-          <p>通过优化的代理网络，加速 Docker 镜像拉取</p>
+          <h3>{{ t('landing.fastPull') }}</h3>
+          <p>{{ t('landing.fastPullDesc') }}</p>
         </div>
         <div class="feature-card">
           <i class="fas fa-shield-alt"></i>
-          <h3>稳定可靠</h3>
-          <p>解决网络问题导致的拉取失败，提高部署成功率</p>
+          <h3>{{ t('landing.stableReliable') }}</h3>
+          <p>{{ t('landing.stableReliableDesc') }}</p>
         </div>
         <div class="feature-card">
           <i class="fas fa-magic"></i>
-          <h3>简单易用</h3>
-          <p>一键生成加速命令，无需复杂配置，立即开始使用</p>
+          <h3>{{ t('landing.easyToUse') }}</h3>
+          <p>{{ t('landing.easyToUseDesc') }}</p>
         </div>
       </div>
     </div>
@@ -192,13 +239,13 @@
               <circle cx="11" cy="11" r="7"/>
               <path d="m20 20-3.5-3.5"/>
             </svg>
-            跨平台镜像搜索
+            {{ t('landing.crossPlatformSearch') }}
           </h2>
-          <p class="search-hero__sub">在已启用的所有 Registry 中统一检索，按平台分组展示</p>
+          <p class="search-hero__sub">{{ t('landing.searchSub') }}</p>
         </div>
 
         <!-- 分段控件：平台选择 -->
-        <div class="seg" role="tablist" aria-label="选择 Registry 平台">
+        <div class="seg" role="tablist" :aria-label="t('landing.selectRegistryPlatform')">
           <button
             class="seg-item seg-item--all"
             :class="{ active: searchScope === 'all' }"
@@ -210,7 +257,7 @@
               <circle cx="12" cy="12" r="9"/>
               <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>
             </svg>
-            <span>全部</span>
+            <span>{{ t('common.all') }}</span>
           </button>
           <button
             v-for="r in registries"
@@ -245,21 +292,21 @@
           <button class="search-bar__cta" :disabled="searching" @click="searchImages()">
             <i v-if="!searching" class="fas fa-bolt"></i>
             <i v-else class="fas fa-spinner fa-spin"></i>
-            <span>{{ searching ? '搜索中' : '搜索镜像' }}</span>
+            <span>{{ searching ? t('landing.searching') : t('landing.searchImagesBtn') }}</span>
           </button>
         </div>
 
         <div class="search-hint">
-          <span>支持关键词：镜像名 / 命名空间 / 描述</span>
+          <span>{{ t('landing.keywordHint') }}</span>
           <span class="dot">·</span>
-          <span>输入示例：nginx、bitnami/mysql、library/redis</span>
+          <span>{{ t('landing.searchExample') }}</span>
         </div>
       </div>
 
       <!-- ============ 标签详情视图 ============ -->
       <div v-if="tagView" class="tag-view">
         <div class="tag-breadcrumb">
-          <a href="javascript:void(0)" @click="closeTagView"><i class="fas fa-arrow-left"></i> 返回搜索结果</a>
+          <a href="javascript:void(0)" @click="closeTagView"><i class="fas fa-arrow-left"></i> {{ t('landing.backToResults') }}</a>
         </div>
         <div class="tag-header">
           <h2 class="tag-title">
@@ -270,24 +317,24 @@
           </h2>
           <p class="image-description">{{ tagView.description }}</p>
           <div class="image-meta">
-            <span v-if="tagView.stars" class="meta-chip"><i class="fas fa-star"></i> {{ fmtCount(tagView.stars) }} 星标</span>
-            <span v-if="tagView.pulls" class="meta-chip"><i class="fas fa-download"></i> {{ fmtCount(tagView.pulls) }} 下载</span>
-            <span class="meta-chip"><i class="fas fa-tags"></i> {{ fmtCount(tagView.count) }} 个标签</span>
+            <span v-if="tagView.stars" class="meta-chip"><i class="fas fa-star"></i> {{ fmtCount(tagView.stars) }} {{ t('landing.stars') }}</span>
+            <span v-if="tagView.pulls" class="meta-chip"><i class="fas fa-download"></i> {{ fmtCount(tagView.pulls) }} {{ t('landing.downloads') }}</span>
+            <span class="meta-chip"><i class="fas fa-tags"></i> {{ fmtCount(tagView.count) }} {{ t('landing.tagsCount') }}</span>
           </div>
         </div>
 
         <div v-if="tagView.loading" class="loading-indicator">
-          <i class="fas fa-spinner fa-spin"></i> 正在加载镜像标签...
+          <i class="fas fa-spinner fa-spin"></i> {{ t('landing.loadingTags') }}
         </div>
         <div v-else-if="tagView.error" class="error-state" role="alert" aria-live="polite">
           <div class="error-icon-wrap">
             <i class="fas fa-exclamation-circle"></i>
           </div>
-          <h3 class="error-title">加载镜像标签失败</h3>
+          <h3 class="error-title">{{ t('landing.loadTagsFailed') }}</h3>
           <p class="error-desc">{{ tagView.error }}</p>
-          <p class="error-hint">请检查镜像名称、Registry 访问凭证或网络连接后重试。</p>
+          <p class="error-hint">{{ t('landing.errorHint') }}</p>
           <button class="retry-btn" @click="loadTagsPage(tagView.page)">
-            <i class="fas fa-redo"></i> 重新加载
+            <i class="fas fa-redo"></i> {{ t('landing.reload') }}
           </button>
         </div>
         <template v-else>
@@ -299,43 +346,42 @@
                   <path d="m20 20-3.5-3.5"/>
                 </svg>
               </span>
-              <input type="text" v-model="tagFilter" placeholder="搜索 TAG..." />
-              <button class="reset-search-btn" @click="tagFilter = ''"><i class="fas fa-times"></i> 重置</button>
+              <input type="text" v-model="tagFilter" :placeholder="t('landing.searchTagPlaceholder')" />
+              <button class="reset-search-btn" @click="tagFilter = ''"><i class="fas fa-times"></i> {{ t('common.reset') }}</button>
             </div>
           </div>
           <div class="tag-search-stats">
             <p>
-              共找到 <strong>{{ fmtCount(tagView.count) }}</strong> 个标签，当前第 <strong>{{ tagView.page }}</strong> / <strong>{{ tagView.totalPages }}</strong> 页
-              <template v-if="tagFilter">，匹配 <strong>{{ filteredTags.length }}</strong> 个</template>
+              {{ t('landing.foundTagsPrefix') }}<strong>{{ fmtCount(tagView.count) }}</strong>{{ t('landing.tagsUnit') }}{{ t('landing.currentPagePrefix') }}<strong>{{ tagView.page }}</strong> / <strong>{{ tagView.totalPages }}</strong>{{ t('landing.pageUnit') }}<template v-if="tagFilter">{{ t('landing.matchPrefix') }}<strong>{{ filteredTags.length }}</strong>{{ t('landing.matchUnit') }}</template>
             </p>
           </div>
           <div class="tag-table-container">
             <table class="tag-table">
               <thead>
-                <tr><th>TAG</th><th>OS/ARCH</th><th>大小</th><th>更新时间</th><th>操作</th></tr>
+                <tr><th>TAG</th><th>OS/ARCH</th><th>{{ t('landing.thSize') }}</th><th>{{ t('landing.thUpdateTime') }}</th><th>{{ t('common.actions') }}</th></tr>
               </thead>
               <tbody>
-                <tr v-for="(t, i) in filteredTags" :key="i" :data-tag="tagNameOf(t)">
-                  <td><span class="tag-name-cell">{{ tagNameOf(t) }}</span></td>
+                <tr v-for="(tag, i) in filteredTags" :key="i" :data-tag="tagNameOf(tag)">
+                  <td><span class="tag-name-cell">{{ tagNameOf(tag) }}</span></td>
                   <td class="arch-cell">
-                    <div v-if="tagOsArchList(t).length" class="arch-list">
-                      <span v-for="(a, ai) in shownArchList(t)" :key="ai" class="arch-chip">{{ a }}</span>
+                    <div v-if="tagOsArchList(tag).length" class="arch-list">
+                      <span v-for="(a, ai) in shownArchList(tag)" :key="ai" class="arch-chip">{{ a }}</span>
                       <button
-                        v-if="tagOsArchList(t).length > 3"
+                        v-if="tagOsArchList(tag).length > 3"
                         type="button"
                         class="arch-toggle"
-                        @click="toggleArch(t)"
-                      >{{ expandedArch[tagNameOf(t)] ? '收起' : '+' + (tagOsArchList(t).length - 3) }}</button>
+                        @click="toggleArch(tag)"
+                        >{{ expandedArch[tagNameOf(tag)] ? t('landing.collapse') : '+' + (tagOsArchList(tag).length - 3) }}</button>
                     </div>
-                    <span v-else class="arch-unknown">未知</span>
+                    <span v-else class="arch-unknown">{{ t('landing.unknown') }}</span>
                   </td>
-                  <td>{{ tagSizeOf(t) }}</td>
-                  <td>{{ tagDateOf(t) }}</td>
+                  <td>{{ tagSizeOf(tag) }}</td>
+                  <td>{{ tagDateOf(tag) }}</td>
                   <td>
-                    <button class="tag-use-btn" @click="useTag(t)"><i class="fas fa-rocket"></i> 使用</button>
+                    <button class="tag-use-btn" @click="useTag(tag)"><i class="fas fa-rocket"></i> {{ t('common.use') }}</button>
                   </td>
                 </tr>
-                <tr v-if="!filteredTags.length"><td colspan="5" class="no-tags-message">本页暂无标签数据</td></tr>
+                <tr v-if="!filteredTags.length"><td colspan="5" class="no-tags-message">{{ t('landing.noTagsThisPage') }}</td></tr>
               </tbody>
             </table>
           </div>
@@ -343,11 +389,11 @@
           <!-- 标签分页 -->
           <div v-if="tagView.totalPages > 1" class="pager">
             <button class="pager-btn" :disabled="tagView.page <= 1" @click="goTagPage(tagView.page - 1)">
-              <i class="fas fa-chevron-left"></i> 上一页
+              <i class="fas fa-chevron-left"></i> {{ t('landing.prevPage') }}
             </button>
-            <span class="pager-info">第 {{ tagView.page }} / {{ tagView.totalPages }} 页</span>
+            <span class="pager-info">{{ t('landing.pageInfo', { page: tagView.page, total: tagView.totalPages }) }}</span>
             <button class="pager-btn" :disabled="tagView.page >= tagView.totalPages" @click="goTagPage(tagView.page + 1)">
-              下一页 <i class="fas fa-chevron-right"></i>
+              {{ t('landing.nextPage') }} <i class="fas fa-chevron-right"></i>
             </button>
           </div>
         </template>
@@ -357,7 +403,7 @@
       <template v-else>
         <div v-loading="searching" class="search-results" ref="resultsRef">
           <div v-if="searchResults.length" class="result-summary">
-            找到约 <strong>{{ fmtCount(searchTotal) }}</strong> 个相关镜像
+            {{ t('landing.foundAboutPrefix') }}<strong>{{ fmtCount(searchTotal) }}</strong>{{ t('landing.relatedImagesUnit') }}
           </div>
           <div v-if="searchResults.length" class="result-list">
             <div v-for="(r, i) in searchResults" :key="i" class="search-result-item">
@@ -370,7 +416,7 @@
                     <i :class="(regInfo(r.registryId)?.icon) || 'fas fa-cube'"></i>
                   </span>
                   <h3 class="result-name">{{ r.fullName || r.name }}</h3>
-                  <span v-if="r.isOfficial" class="official-badge"><i class="fas fa-check-circle"></i> 官方</span>
+                  <span v-if="r.isOfficial" class="official-badge"><i class="fas fa-check-circle"></i> {{ t('landing.official') }}</span>
                 </div>
                 <div class="result-stats">
                   <span v-if="r.stars || r.star_count" class="stats">
@@ -387,36 +433,36 @@
               <!-- 镜像名（原版默认地址，参考老版呈现） -->
               <div class="result-pull-command">
                 <code>{{ r.fullName || r.name }}</code>
-                <button class="copy-small-btn" @click="copyCmd(r.fullName || r.name)" title="复制镜像名"><i class="fas fa-copy"></i></button>
+                <button class="copy-small-btn" @click="copyCmd(r.fullName || r.name)" :title="t('landing.copyImageNameTitle')"><i class="fas fa-copy"></i></button>
               </div>
               <div class="result-actions">
                 <button class="action-btn primary" @click="useImage(r)">
-                  <i class="fas fa-rocket"></i> 使用此镜像
+                  <i class="fas fa-rocket"></i> {{ t('landing.useThisImage') }}
                 </button>
                 <button v-if="canViewTags(r)" class="action-btn secondary" @click="openTags(r)">
-                  <i class="fas fa-tags"></i> 查看标签
+                  <i class="fas fa-tags"></i> {{ t('landing.viewTags') }}
                 </button>
               </div>
             </div>
           </div>
           <div v-else-if="searchInput" class="empty">
             <i class="fas fa-search"></i>
-            <p>没有找到匹配 "{{ searchInput }}" 的镜像</p>
+            <p>{{ t('landing.noMatch', { kw: searchInput }) }}</p>
           </div>
           <div v-else class="empty">
             <i class="fas fa-search"></i>
-            <p>输入关键词开始搜索</p>
+            <p>{{ t('landing.enterKeywordToSearch') }}</p>
           </div>
         </div>
 
         <!-- 分页 -->
         <div v-if="searchTotalPages > 1" class="pager">
           <button class="pager-btn" :disabled="searchPage <= 1" @click="goSearchPage(searchPage - 1)">
-            <i class="fas fa-chevron-left"></i> 上一页
+            <i class="fas fa-chevron-left"></i> {{ t('landing.prevPage') }}
           </button>
-          <span class="pager-info">第 {{ searchPage }} / {{ searchTotalPages }} 页</span>
+          <span class="pager-info">{{ t('landing.pageInfo', { page: searchPage, total: searchTotalPages }) }}</span>
           <button class="pager-btn" :disabled="searchPage >= searchTotalPages" @click="goSearchPage(searchPage + 1)">
-            下一页 <i class="fas fa-chevron-right"></i>
+            {{ t('landing.nextPage') }} <i class="fas fa-chevron-right"></i>
           </button>
         </div>
 
@@ -424,18 +470,18 @@
         <div class="features" v-if="!searchResults.length && !searchInput">
           <div class="feature-card">
             <i class="fas fa-search"></i>
-            <h3>快速搜索</h3>
-            <p>便捷地搜索 Docker Hub 上的所有可用镜像</p>
+            <h3>{{ t('landing.quickSearch') }}</h3>
+            <p>{{ t('landing.quickSearchDesc') }}</p>
           </div>
           <div class="feature-card">
             <i class="fas fa-tag"></i>
-            <h3>版本管理</h3>
-            <p>查看所有可用的镜像标签和版本信息</p>
+            <h3>{{ t('landing.versionMgmt') }}</h3>
+            <p>{{ t('landing.versionMgmtDesc') }}</p>
           </div>
           <div class="feature-card">
             <i class="fas fa-rocket"></i>
-            <h3>一键部署</h3>
-            <p>快速获取并使用所需的 Docker 镜像</p>
+            <h3>{{ t('landing.oneClickDeploy') }}</h3>
+            <p>{{ t('landing.oneClickDeployDesc') }}</p>
           </div>
         </div>
       </template>
@@ -446,7 +492,7 @@
       <div v-loading="docsLoading" class="docs-layout">
         <div v-if="docs.length" class="docs-grid">
           <aside class="docs-aside">
-            <h3 class="docs-list-title">文档列表</h3>
+            <h3 class="docs-list-title">{{ t('landing.docList') }}</h3>
             <ul class="docs-list">
               <li
                 v-for="d in docs"
@@ -462,7 +508,7 @@
           </aside>
           <article class="docs-content">
             <div v-if="currentDoc" class="docs-eyebrow">
-              <i class="fas fa-book-open"></i> 使用教程
+              <i class="fas fa-book-open"></i> {{ t('landing.docs') }}
             </div>
             <h1 v-if="currentDoc" class="docs-h1">{{ currentDoc.title }}</h1>
             <div
@@ -472,13 +518,13 @@
             ></div>
             <div v-else class="empty">
               <i class="fas fa-book-open"></i>
-              <p>请选择左侧文档</p>
+              <p>{{ t('landing.selectDocHint') }}</p>
             </div>
           </article>
         </div>
         <div v-else class="empty">
           <i class="fas fa-book"></i>
-          <p>暂无文档</p>
+          <p>{{ t('landing.noDocs') }}</p>
         </div>
       </div>
     </div>
@@ -499,8 +545,8 @@
         v-show="showBackTop"
         class="back-top"
         @click="scrollToTop"
-        title="返回顶部"
-        aria-label="返回顶部"
+        :title="t('landing.backToTop')"
+        :aria-label="t('landing.backToTop')"
       >
         <i class="fas fa-arrow-up"></i>
       </button>
@@ -511,6 +557,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import {
@@ -525,6 +572,8 @@ import {
   getSiteInfo
 } from '../services'
 import { getMenuIconSvg as getMenuIconSvgFromLib } from '../lib/menuIcons'
+import LangSwitch from '../components/LangSwitch.vue'
+import { useTheme } from '../composables/useTheme'
 
 marked.setOptions({
   breaks: true,
@@ -532,20 +581,35 @@ marked.setOptions({
 })
 
 const router = useRouter()
+const { t } = useI18n()
+
+// ===== 公开页主题切换（复用全局单例 useTheme，与后台共享 mode 状态 + localStorage） =====
+const { mode, setMode } = useTheme()
+const themeOpen = ref(false)
+const themeLabel = computed(() => {
+  if (mode.value === 'light') return t('layout.themeLight')
+  if (mode.value === 'dark') return t('layout.themeDark')
+  return t('layout.themeAuto')
+})
+function pickTheme(m) {
+  setMode(m)
+  themeOpen.value = false
+}
+
 const year = new Date().getFullYear()
 const defaultLogo = 'https://cdn.jsdelivr.net/gh/dqzboy/Blog-Image/BlogCourse/docker-proxy.png'
 const logoUrl = ref(defaultLogo)
 
-const tabs = [
-  { id: 'accelerate', label: '镜像加速', icon: 'fa-rocket' },
-  { id: 'search', label: '镜像搜索', icon: 'fa-search' },
-  { id: 'docs', label: '使用教程', icon: 'fa-book' }
-]
+const tabs = computed(() => [
+  { id: 'accelerate', label: t('landing.accelerate'), icon: 'fa-rocket' },
+  { id: 'search', label: t('landing.searchImages'), icon: 'fa-search' },
+  { id: 'docs', label: t('landing.docs'), icon: 'fa-book' }
+])
 
 // tab 持久化：刷新页面后保留用户上一次的 tab 位置，避免「搜索/教程」页被强制回弹到「加速」页。
 // 同步从 localStorage 读取，初次渲染就是目标值，无 tab 闪烁。
 const TAB_STORAGE_KEY = 'hubcmdui_landing_tab'
-const VALID_TAB_IDS = tabs.map(t => t.id)
+const VALID_TAB_IDS = tabs.value.map(t => t.id)
 function loadStoredTab() {
   try {
     const v = localStorage.getItem(TAB_STORAGE_KEY)
@@ -754,10 +818,10 @@ function setAccel(registryId, imagePath, originalImage) {
     detectedName: rp.name,
     badgeStyle: { background: rp.color, color: rp.badge },
     commands: [
-      { type: 'proxy', label: '代理拉取镜像', text: `docker pull ${proxyImage}`, hint: '' },
-      { type: 'original', label: '原始拉取命令', text: `docker pull ${originalImage}`, hint: '不通过代理拉取，可能受网络影响' },
-      { type: 'rename', label: '重命名镜像', text: `docker tag ${proxyImage} ${originalImage}`, hint: '将代理镜像重命名为原始镜像名' },
-      { type: 'rmi', label: '删除代理镜像', text: `docker rmi ${proxyImage}`, hint: '重命名完成后，可删除代理镜像' }
+      { type: 'proxy', label: t('landing.proxyPull'), text: `docker pull ${proxyImage}`, hint: '' },
+      { type: 'original', label: t('landing.originalPull'), text: `docker pull ${originalImage}`, hint: t('landing.originalPullHint') },
+      { type: 'rename', label: t('landing.renameImage'), text: `docker tag ${proxyImage} ${originalImage}`, hint: t('landing.renameHint') },
+      { type: 'rmi', label: t('landing.removeProxy'), text: `docker rmi ${proxyImage}`, hint: t('landing.rmiHint') }
     ]
   }
 }
@@ -765,7 +829,7 @@ function setAccel(registryId, imagePath, originalImage) {
 function generateCommands() {
   const img = (imageInput.value || '').trim()
   if (!img) {
-    ElMessage.warning('请输入镜像名称')
+    ElMessage.warning(t('landing.pleaseEnterImage'))
     return
   }
   const d = detectImage(img)
@@ -774,14 +838,14 @@ function generateCommands() {
 
 function copyCmd(text) {
   if (text == null || text === '') {
-    ElMessage.warning('没有可复制的内容')
+    ElMessage.warning(t('landing.nothingToCopy'))
     return
   }
   const str = String(text)
   // 优先用现代 Clipboard API（仅在 HTTPS / localhost 等安全上下文可用）
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(str)
-      .then(() => ElMessage.success('已复制到剪贴板'))
+      .then(() => ElMessage.success(t('landing.copiedToClipboard')))
       .catch(() => fallbackCopy(str))
     return
   }
@@ -819,10 +883,10 @@ function fallbackCopy(text) {
       sel.removeAllRanges()
       sel.addRange(prevRange)
     }
-    if (ok) ElMessage.success('已复制到剪贴板')
-    else ElMessage.error('复制失败，请手动选中复制')
+    if (ok) ElMessage.success(t('landing.copiedToClipboard'))
+    else ElMessage.error(t('landing.copyFailedManual'))
   } catch (e) {
-    ElMessage.error('复制失败：' + (e?.message || e))
+    ElMessage.error(t('landing.copyFailedReason', { reason: e?.message || e }))
   }
 }
 
@@ -868,7 +932,7 @@ function escapeHtml(str) {
 }
 function renderDescription(text) {
   const raw = String(text || '').trim()
-  if (!raw) return '<span class="desc-empty">暂无描述</span>'
+  if (!raw) return '<span class="desc-empty">' + t('landing.noDescription') + '</span>'
   try {
     const html = marked.parseInline(raw, { breaks: false })
     return html.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ')
@@ -895,14 +959,14 @@ function regInfo(id) {
 }
 
 const searchPlaceholder = computed(() => {
-  if (searchScope.value === 'all') return '输入关键词在所有平台搜索镜像，例如：nginx、mysql、redis…'
-  return `在 ${registryAbbr(currentReg.value) || ''} 中搜索镜像，例如：nginx、mysql、redis…`
+  if (searchScope.value === 'all') return t('landing.searchPlaceholderAll')
+  return t('landing.searchPlaceholderScope', { reg: registryAbbr(currentReg.value) || '' })
 })
 
 async function searchImages(page = 1) {
   const kw = (searchInput.value || '').trim()
   if (!kw) {
-    ElMessage.warning('请输入搜索关键词')
+    ElMessage.warning(t('landing.pleaseEnterKeyword'))
     return
   }
   // 切换关键词时回到第一页
@@ -965,7 +1029,7 @@ async function searchImages(page = 1) {
     }
   } catch (e) {
     const msg = e?.response?.data?.error || e.message
-    ElMessage.error('搜索失败：' + msg)
+    ElMessage.error(t('landing.searchFailedReason', { reason: msg }))
   } finally {
     searching.value = false
   }
@@ -1039,7 +1103,7 @@ function useImage(r) {
   imageInput.value = full
   tab.value = 'accelerate'
   setAccel(id, full, full)
-  ElMessage.success(`已选择镜像：${full}`)
+  ElMessage.success(t('landing.selectedImage', { name: full }))
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -1052,7 +1116,7 @@ async function openTags(r) {
   tagView.value = {
     imageName: name,
     registryId: id,
-    description: r.description || '暂无描述',
+    description: r.description || t('landing.noDescription'),
     stars: r.stars || r.star_count || 0,
     pulls: r.pulls || r.pull_count || 0,
     prefix: pullPrefix,
@@ -1089,7 +1153,7 @@ async function loadTagsPage(p) {
     tagView.value = {
       ...tagView.value,
       loading: false,
-      error: e?.response?.data?.error || e.message || '加载标签失败'
+      error: e?.response?.data?.error || e.message || t('landing.loadTagsErrorFallback')
     }
   }
 }
@@ -1177,13 +1241,13 @@ function toggleArch(t) {
 }
 
 // 使用指定标签：跳到加速页，按后台代理地址生成 镜像:tag 的加速命令
-function useTag(t) {
-  const name = tagNameOf(t)
+function useTag(tag) {
+  const name = tagNameOf(tag)
   const full = `${tagView.value.imageName}:${name}`
   imageInput.value = full
   tab.value = 'accelerate'
   setAccel(tagView.value.registryId, full, full)
-  ElMessage.success(`已选择镜像：${full}`)
+  ElMessage.success(t('landing.selectedImage', { name: full }))
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -1200,7 +1264,7 @@ async function loadDocs() {
       loadDoc(docs.value[0])
     }
   } catch (e) {
-    ElMessage.error('文档加载失败：' + (e?.response?.data?.error || e.message))
+    ElMessage.error(t('landing.docLoadFailedReason', { reason: e?.response?.data?.error || e.message }))
   } finally {
     docsLoading.value = false
   }
@@ -1211,7 +1275,7 @@ async function loadDoc(d) {
   try {
     currentDoc.value = await getPublicDoc(id)
   } catch (e) {
-    ElMessage.error('文档读取失败：' + (e?.response?.data?.error || e.message))
+    ElMessage.error(t('landing.docReadFailedReason', { reason: e?.response?.data?.error || e.message }))
   }
 }
 
@@ -1290,7 +1354,7 @@ const registryHintNames = computed(() => {
   const names = registries.value.map(r => registryAbbr(r)).filter(Boolean)
   if (!names.length) return 'Docker Hub'
   if (names.length <= 6) return names.join(' / ')
-  return names.slice(0, 6).join(' / ') + ` 等 ${names.length} 个`
+  return names.slice(0, 6).join(' / ') + t('landing.registryEtc', { n: names.length })
 })
 
 const registryExampleHint = computed(() => {
@@ -1349,6 +1413,94 @@ onUnmounted(() => {
      顶部导航 .hd 用负 margin 出血；.hero / .tab-container / .content-card
      各自 width:100% + max-width:1200px + margin:0 auto 居中。 */
   padding: 0 30px 40px;
+}
+
+/* ============== 语言切换器（固定右上角，整页可见） ============== */
+.topbar-float {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== 公开页主题切换（与 .hd-pill 同款视觉） ===== */
+.theme-toggle-wrap {
+  position: relative;
+  z-index: 1002; /* 高于下方透明遮罩，保证按钮与菜单始终可点击 */
+}
+.hd-pill.theme-btn {
+  gap: 6px;
+  cursor: pointer;
+  padding: 0 12px;
+}
+.theme-ic {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.theme-ic svg { width: 100%; height: 100%; display: block; }
+.theme-btn .caret {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  opacity: 0.85;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.theme-btn .caret svg { width: 100%; height: 100%; display: block; }
+
+.theme-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 168px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 34px rgba(15, 23, 42, 0.14);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 1001;
+}
+.theme-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  color: var(--fg-2);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.theme-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.theme-item:hover { background: var(--bg-hover); }
+.theme-item.active {
+  color: var(--accent);
+  font-weight: 600;
+  background: var(--accent-soft, rgba(61, 124, 244, 0.08));
+}
+.theme-item .check { margin-left: auto; width: 16px; height: 16px; }
+
+.theme-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
 }
 
 /* ============== 顶部导航（Glassmorphism 胶囊菜单） ============== */
@@ -2638,4 +2790,468 @@ onUnmounted(() => {
   .docs-content { padding: 22px 20px 28px; }
   .docs-h1 { font-size: 22px; }
 }
+
+/* ========================================================================
+ * 深色模式覆盖（非 scoped，依靠 :root.dark 触发，与 useTheme 联动）
+ * 选择器前缀 :root.dark .landing 提升特异性，胜过上面 scoped 的
+ * .landing .xxx[data-v-xxx]，因为非 scoped 在编译产物里靠后、且加上 :root.dark 多一份特异性
+ * ======================================================================== */
+:root.dark .landing {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+/* === 顶部 header（Glassmorphism） === */
+:root.dark .landing .hd {
+  background: rgba(15, 23, 42, 0.72);
+  border-bottom-color: rgba(51, 65, 85, 0.6);
+}
+:root.dark .landing .hd-pill {
+  --pill-fg: #cbd5e1;
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(51, 65, 85, 0.6);
+}
+:root.dark .landing .hd-pill:hover {
+  color: #e2e8f0;
+  background: rgba(30, 41, 59, 0.9);
+  border-color: #60a5fa;
+}
+:root.dark .landing .hd-pill--default { color: #cbd5e1; background: rgba(30, 41, 59, 0.6); border-color: rgba(51, 65, 85, 0.6); }
+:root.dark .landing .hd-pill--default:hover { color: #f1f5f9; background: rgba(30, 41, 59, 0.9); border-color: #60a5fa; }
+:root.dark .landing .hd-logo { color: #f1f5f9; }
+:root.dark .landing .hd-logo:hover { background: rgba(96, 165, 250, 0.12); }
+:root.dark .landing .hd-pill--active {
+  color: #f1f5f9;
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  border-color: transparent;
+}
+
+/* === Tab 栏 === */
+:root.dark .landing .tab-container {
+  background: #1e293b;
+  border: 1px solid #334155;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+:root.dark .landing .tab { color: #94a3b8; }
+:root.dark .landing .tab:hover { color: #60a5fa; background: rgba(96, 165, 250, 0.08); }
+:root.dark .landing .tab.active { color: #60a5fa; background: rgba(96, 165, 250, 0.12); }
+
+/* === Hero 标题与副标题 === */
+:root.dark .landing .hero-title { color: #f1f5f9; }
+:root.dark .landing .hero-sub { color: #94a3b8; }
+
+/* === 内容卡片 === */
+:root.dark .landing .content-card {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+:root.dark .landing .result-title { color: #f1f5f9; }
+
+/* === 镜像加速 tab：Hero 卡 === */
+:root.dark .landing .accel-hero,
+:root.dark .landing .search-hero {
+  background: linear-gradient(180deg, #1e3a5f 0%, #1e293b 100%);
+  border-color: #334155;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+:root.dark .landing .accel-hero__title,
+:root.dark .landing .search-hero__title { color: #f1f5f9; }
+:root.dark .landing .accel-hero__title .hero-ic,
+:root.dark .landing .search-hero__title .hero-ic { color: #60a5fa; }
+:root.dark .landing .accel-hero__sub,
+:root.dark .landing .search-hero__sub { color: #94a3b8; }
+
+/* === 分段控件（seg） === */
+:root.dark .landing .seg {
+  background: #172033;
+  border-color: #334155;
+}
+:root.dark .landing .seg-item { color: #94a3b8; }
+:root.dark .landing .seg-item:hover { color: #cbd5e1; background: rgba(96, 165, 250, 0.06); }
+:root.dark .landing .seg-item.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* === 输入框 / 按钮 === */
+:root.dark .landing .search-bar {
+  background: #1e293b;
+  border-color: #334155;
+}
+:root.dark .landing .search-bar:hover { border-color: #475569; }
+:root.dark .landing .search-bar:focus-within { border-color: #60a5fa; box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.18); }
+:root.dark .landing .search-bar__input { color: #f1f5f9; }
+:root.dark .landing .search-bar__input::placeholder { color: #64748b; }
+:root.dark .landing .search-bar__lead { color: #64748b; }
+:root.dark .landing .search-bar__cta {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(96, 165, 250, 0.32);
+}
+:root.dark .landing .search-bar__cta:hover {
+  background: linear-gradient(135deg, #60a5fa 0%, #93c5fd 100%);
+  box-shadow: 0 6px 18px rgba(96, 165, 250, 0.42);
+}
+
+/* === 镜像加速 tab：步骤卡 === */
+:root.dark .landing .step-card {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+:root.dark .landing .step {
+  --step-bg: #172033;
+  --step-border: #334155;
+  background: var(--step-bg);
+  border-color: var(--step-border);
+  color: #e2e8f0;
+}
+:root.dark .landing .step .step-label { color: #cbd5e1; }
+:root.dark .landing .step .step-copy-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: #fff;
+}
+:root.dark .landing .step .step-copy-btn:hover { box-shadow: 0 4px 12px rgba(96, 165, 250, 0.42); }
+/* step 状态变体（成功/错误，浅色下用 #f5f7fa 灰底） */
+:root.dark .landing .step-success,
+:root.dark .landing .step-error {
+  --step-bg: #172033;
+  --step-border: #334155;
+  background: var(--step-bg);
+  border-color: var(--step-border);
+  color: #e2e8f0;
+}
+
+/* === 镜像加速 tab：Quick start 卡 === */
+:root.dark .landing .quick-card {
+  background: linear-gradient(180deg, #1e3a5f 0%, #1e293b 100%);
+  border-color: #334155;
+}
+:root.dark .landing .quick-card .quick-title { color: #f1f5f9; }
+:root.dark .landing .quick-card .quick-title strong { color: #60a5fa; }
+:root.dark .landing .quick-card .quick-title i { color: #fbbf24; }
+:root.dark .landing .quick-item {
+  background: #1e293b;
+  border-color: #475569;
+}
+:root.dark .landing .quick-item:hover { border-color: #60a5fa; box-shadow: 0 2px 8px rgba(96, 165, 250, 0.18); }
+:root.dark .landing .quick-item i { color: #60a5fa; }
+:root.dark .landing .quick-item .quick-item-title { color: #f1f5f9; }
+
+/* === 镜像加速 tab：特性卡（高速拉取/稳定可靠/简单易用） === */
+:root.dark .landing .feature-card {
+  background: linear-gradient(180deg, #1e3a5f 0%, #1e293b 100%);
+  border-color: #334155;
+}
+:root.dark .landing .feature-card:hover { border-color: #60a5fa; box-shadow: 0 4px 14px rgba(96, 165, 250, 0.18); }
+:root.dark .landing .feature-card h3 { color: #f1f5f9; }
+:root.dark .landing .feature-card p { color: #94a3b8; }
+
+/* === 镜像搜索 tab：tab 切换按钮 === */
+:root.dark .landing .registry-badge { background: #475569; }
+
+/* === 镜像搜索 tab：搜索输入行 === */
+:root.dark .landing .text-input {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+:root.dark .landing .text-input:focus { border-color: #60a5fa; }
+:root.dark .landing .text-input::placeholder { color: #64748b; }
+:root.dark .landing .primary-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(96, 165, 250, 0.28);
+}
+:root.dark .landing .primary-btn:hover {
+  background: linear-gradient(135deg, #60a5fa 0%, #93c5fd 100%);
+  box-shadow: 0 6px 14px rgba(96, 165, 250, 0.42);
+}
+
+/* === 搜索结果卡 === */
+:root.dark .landing .search-result-item {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+:root.dark .landing .search-result-item:hover { border-color: #475569; }
+:root.dark .landing .search-result-item .result-summary { color: #94a3b8; }
+:root.dark .landing .search-result-item .result-summary strong { color: #f1f5f9; }
+:root.dark .landing .result-icon-wrap {
+  background: linear-gradient(180deg, #3b82f6 0%, #60a5fa 100%);
+  color: #fff;
+}
+:root.dark .landing .result-card .result-title { color: #f1f5f9; }
+:root.dark .landing .result-card .result-title i { color: #60a5fa; }
+/* .result-description v-html 内子元素的深色适配已迁移到下方独立 <style> 块 */
+:root.dark .landing .pull-cmd {
+  background: #172033;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+:root.dark .landing .copy-small-btn { background: #3b82f6; color: #fff; }
+:root.dark .landing .copy-small-btn:hover { background: #60a5fa; }
+:root.dark .landing .action-btn.secondary {
+  background: #1e293b;
+  color: #60a5fa;
+  border-color: #60a5fa;
+}
+:root.dark .landing .action-btn.secondary:hover { background: rgba(96, 165, 250, 0.12); }
+
+/* === 镜像搜索 tab：分页按钮 === */
+:root.dark .landing .pager-btn {
+  background: #1e293b;
+  color: #60a5fa;
+  border-color: #334155;
+}
+:root.dark .landing .pager-btn:hover:not(:disabled) {
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.12);
+}
+:root.dark .landing .pager-btn:disabled { color: #475569; border-color: #334155; }
+:root.dark .landing .pager-info { color: #94a3b8; }
+
+/* === 镜像详情 / 标签表 === */
+:root.dark .landing .image-detail-card {
+  background: linear-gradient(180deg, #1e3a5f 0%, #1e293b 100%);
+  border-color: #334155;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+:root.dark .landing .image-detail-card .image-description { color: #cbd5e1; }
+:root.dark .landing .image-tag {
+  background: rgba(96, 165, 250, 0.15);
+  border-color: rgba(96, 165, 250, 0.3);
+  color: #93c5fd;
+}
+:root.dark .landing .image-tag-link { color: #93c5fd; }
+:root.dark .landing .tag-table {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+:root.dark .landing .tag-table thead th {
+  background: linear-gradient(180deg, #172033 0%, #1e293b 100%);
+  color: #cbd5e1;
+  border-bottom-color: #334155;
+}
+:root.dark .landing .tag-table tbody td { border-bottom-color: #334155; color: #e2e8f0; }
+:root.dark .landing .tag-table tbody tr:hover { background: rgba(96, 165, 250, 0.06); }
+:root.dark .landing .tag-name-cell { color: #f1f5f9; }
+:root.dark .landing .arch-chip {
+  background: rgba(96, 165, 250, 0.15);
+  color: #93c5fd;
+  border-color: rgba(96, 165, 250, 0.3);
+}
+:root.dark .landing .arch-toggle {
+  background: #172033;
+  color: #94a3b8;
+  border-color: #334155;
+}
+:root.dark .landing .arch-toggle:hover { background: rgba(96, 165, 250, 0.15); color: #cbd5e1; }
+:root.dark .landing .tag-use-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.42);
+}
+:root.dark .landing .tag-use-btn:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 16px rgba(96, 165, 250, 0.5);
+}
+:root.dark .landing .tag-search-container input {
+  background: #1e293b;
+  border-color: #60a5fa;
+  color: #f1f5f9;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.18);
+}
+:root.dark .landing .tag-search-container input::placeholder { color: #64748b; }
+:root.dark .landing .reset-search-btn { background: #334155; color: #94a3b8; }
+:root.dark .landing .reset-search-btn:hover { background: #475569; color: #f1f5f9; }
+:root.dark .landing .tag-search-stats { color: #94a3b8; }
+:root.dark .landing .tag-search-stats strong { color: #93c5fd; }
+
+/* === 使用教程 tab / docs 网格 ===
+   注意：深色覆盖已迁移到下方独立 <style> 块（v-html 子元素无 [data-v-xxx]，
+   必须在非 scoped 块里才能命中）。原 scoped 块里的 :root.dark 规则全部移除。 */
+
+/* === 错误提示卡 === */
+:root.dark .landing .error-card {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.12) 0%, #1e293b 100%);
+  border-color: #7f1d1d;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+:root.dark .landing .error-icon-wrap { background: rgba(239, 68, 68, 0.2); }
+:root.dark .landing .error-icon-wrap i { color: #fca5a5; }
+:root.dark .landing .error-title { color: #fca5a5; }
+:root.dark .landing .error-msg { color: #fca5a5; }
+:root.dark .landing .retry-btn { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); color: #fff; }
+:root.dark .landing .retry-btn:hover {
+  background: linear-gradient(135deg, #60a5fa 0%, #93c5fd 100%);
+  box-shadow: 0 6px 14px rgba(96, 165, 250, 0.42);
+}
+
+/* === 空状态 / 提示文字 === */
+:root.dark .landing .empty { color: #94a3b8; }
+:root.dark .landing .empty i { color: #475569; }
+:root.dark .landing .empty-hint { color: #94a3b8; }
+:root.dark .landing .empty-hint i { color: #475569; }
+:root.dark .landing .no-tags-message { color: #94a3b8; }
+:root.dark .landing .loading-indicator { color: #94a3b8; }
+:root.dark .landing .search-hint { color: #94a3b8; }
+:root.dark .landing .search-hint .dot { color: #475569; }
+
+/* === 模态弹窗 === */
+:root.dark .landing .modal-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+:root.dark .landing .modal-link {
+  border: 1px solid #334155;
+  background: #172033;
+  color: #60a5fa;
+}
+:root.dark .landing .modal-link:hover { border-color: #60a5fa; }
+:root.dark .landing .modal-action-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(96, 165, 250, 0.42);
+}
+:root.dark .landing .modal-backdrop { background: rgba(0, 0, 0, 0.6); }
+
+/* === 主题菜单（沿用变量） === */
+:root.dark .landing .theme-menu {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
+}
+:root.dark .landing .theme-item { color: #cbd5e1; }
+:root.dark .landing .theme-item:hover { background: rgba(96, 165, 250, 0.1); }
+:root.dark .landing .theme-item.active { color: #60a5fa; background: rgba(96, 165, 250, 0.15); }
+:root.dark .landing .theme-btn {
+  color: #cbd5e1;
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(51, 65, 85, 0.6);
+}
+:root.dark .landing .theme-btn:hover {
+  color: #f1f5f9;
+  background: rgba(30, 41, 59, 0.9);
+  border-color: #60a5fa;
+}
+
+/* === lang 切换器（nav 变体在 Landing 已对齐 .hd-pill） === */
+:root.dark .landing .lang-toggle--nav { color: #cbd5e1; }
+:root.dark .landing .lang-toggle--nav:hover {
+  color: #f1f5f9;
+  background: rgba(30, 41, 59, 0.9);
+  border-color: #60a5fa;
+}
+
+/* === Element Plus 下拉菜单（深色适配，仅 Landing 范围，避免影响登录/后台） === */
+:root.dark .landing .el-popper .el-dropdown-menu {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
+}
+:root.dark .landing .el-popper .el-dropdown-menu .el-dropdown-item { color: #cbd5e1; }
+:root.dark .landing .el-popper .el-dropdown-menu .el-dropdown-item:hover {
+  background: rgba(96, 165, 250, 0.1);
+  color: #93c5fd;
+}
+:root.dark .landing .el-popper .el-dropdown-menu .el-dropdown-item.is-active {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.15);
+  font-weight: 600;
+}
+</style>
+
+<!--
+  ============================================================================
+  深色模式覆盖（独立非 scoped 块）
+  ============================================================================
+  关键：必须独立成块、不加 scoped，否则 Vue 会给所有选择器末尾加 [data-v-xxx]，
+  导致 v-html 渲染的内容（table th、h2、p、ul li、strong 等子元素自身没有该属性）
+  全部不命中。独立非 scoped 块不会加属性选择器，v-html 子元素正常匹配。
+  触发条件：与 useTheme 联动，<html class="dark"> 时命中。
+  ============================================================================
+-->
+<style>
+/* === 使用教程 tab / docs 网格 === */
+/* 侧边栏：注意 .docs-item 在 .docs-aside 里（不是 .docs-content），上一版写错 class 名了 */
+:root.dark .landing .docs-aside {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 6px 18px rgba(0, 0, 0, 0.3);
+  scrollbar-color: #475569 transparent;
+}
+:root.dark .landing .docs-aside::-webkit-scrollbar-thumb { background: #475569; }
+:root.dark .landing .docs-list-title { color: #64748b; }
+:root.dark .landing .docs-item { color: #cbd5e1; }
+:root.dark .landing .docs-item:hover {
+  background: rgba(96, 165, 250, 0.08);
+  color: #93c5fd;
+}
+:root.dark .landing .docs-item.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(96, 165, 250, 0.3);
+}
+:root.dark .landing .docs-content {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+:root.dark .landing .docs-eyebrow {
+  background: rgba(96, 165, 250, 0.12);
+  border-color: rgba(96, 165, 250, 0.3);
+  color: #93c5fd;
+}
+:root.dark .landing .docs-h1 { color: #f1f5f9; border-bottom-color: #334155; }
+
+/* 文档正文：v-html 渲染的元素无 [data-v-xxx]，必须用非 scoped 块才能命中 */
+:root.dark .landing .docs-body { color: #cbd5e1; }
+:root.dark .landing .docs-body h1 { color: #f1f5f9; }
+:root.dark .landing .docs-body h2 { color: #60a5fa; border-left-color: #60a5fa; }
+:root.dark .landing .docs-body h3 { color: #f1f5f9; }
+:root.dark .landing .docs-body p { color: #cbd5e1; }
+:root.dark .landing .docs-body a { color: #60a5fa; }
+:root.dark .landing .docs-body strong { color: #f1f5f9; }
+:root.dark .landing .docs-body ul li,
+:root.dark .landing .docs-body ol li { color: #cbd5e1; }
+:root.dark .landing .docs-body code {
+  background: #172033;
+  color: #fca5a5;
+  border-color: #334155;
+}
+:root.dark .landing .docs-body pre {
+  background: #020617;
+  color: #e2e8f0;
+  border-color: #334155;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+:root.dark .landing .docs-body blockquote {
+  border-left-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.08);
+  color: #cbd5e1;
+}
+:root.dark .landing .docs-body table { border-color: #334155; }
+:root.dark .landing .docs-body table th,
+:root.dark .landing .docs-body table td { border-color: #334155; }
+:root.dark .landing .docs-body table th {
+  background: rgba(96, 165, 250, 0.15);
+  color: #f1f5f9;
+}
+:root.dark .landing .docs-body table tbody tr:nth-child(even) { background: rgba(148, 163, 184, 0.04); }
+:root.dark .landing .docs-body table tbody tr:hover { background: rgba(96, 165, 250, 0.08); }
+:root.dark .landing .docs-body hr { border-color: #334155; }
+:root.dark .landing .docs-body img { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); }
+
+/* === 搜索结果描述（v-html 渲染） === */
+:root.dark .landing .result-description a { color: #60a5fa; border-bottom-color: rgba(96, 165, 250, 0.45); }
+:root.dark .landing .result-description a:hover { color: #93c5fd; }
+:root.dark .landing .result-description code { background: #172033; color: #fca5a5; border-color: #334155; }
+:root.dark .landing .result-description strong { color: #f1f5f9; }
+:root.dark .landing .result-description .desc-empty { color: #94a3b8; }
 </style>

@@ -44,12 +44,17 @@
 
 ## 🔨 Features
 - [x] **Zero disk cache**: A single process automatically routes by `Host` to major public registries (Docker Hub, GHCR, Quay, K8s, MCR, Elastic, NVCR, etc.), performs server-side token authentication and streams the response without writing to disk or consuming local storage.
-- [x] **One-click deployment**: Automatically checks and installs Docker / Compose dependencies, supporting both the image-pull mode (`docker-compose.yaml`) and the source-build mode (`docker-compose-build.yaml`).
+- [x] **One-click deployment**: Interactive menu: with a single click, complete “install dependencies → start Docker image acceleration → (optional) configure Nginx/Caddy reverse proxy”.
 - [x] **Optional reverse proxy**: Automatically deploys Nginx or Caddy as a reverse proxy and renders the corresponding configuration (HTTPS, Host rewriting).
 - [x] **Upstream account authentication**: You can configure an upstream username/password; the proxy server exchanges them for a Bearer Token, enabling pulls of private Docker Hub images and mitigating official rate limits.
 - [x] **HubCMD-UI management panel**: Manage proxies, configure server parameters, and hot-reload directly from the web UI; includes image search, documentation tutorials, container management, monitoring, and alerting.
+- [x] **System Dashboard**: Real-time monitoring of server resources, container runtime status, and network traffic information
 - [x] **Cross-platform images**: Supports deployment on mainstream architectures such as `linux/amd64` and `linux/arm64`.
 - [x] **Daily operations management**: Provides full lifecycle management including service start / stop / restart / logs / update / uninstall.
+- [x] **Traffic Monitoring and Alerts**: Provides detailed client-side traffic metrics for server bandwidth throughput and image pull operations, along with threshold-based monitoring and alerting.
+- [x] **Registry Management**: Each registry has independent configuration management, enabling online management of image proxies (registries) and service settings without the need to manually edit configuration files.
+- [x] **IP Access Control**: IP blacklists and whitelists to control who can pull images from this service. Supports both individual IPs and CIDR blocks.
+
 
 ## 📦 Deployment
 
@@ -81,7 +86,7 @@ bash -c "$(curl -fsSL https://ghp.ci/https://raw.githubusercontent.com/dqzboy/Do
 
 > The script automatically: checks and installs Docker / Docker Compose; generates a random `GO_PROXY_ADMIN_TOKEN` and writes it to `.env`; optionally deploys Nginx / Caddy reverse proxy.
 
-After deployment, visit `http://<server-IP>:30080/admin` to manage proxies and server parameters from the web UI (you must register an admin account on first use; there is no built-in default account).
+After deployment, visit `http://<server-IP>:30080/admin` to manage proxies and server parameters from the web UI.
 
 ### Config persistence & upgrades (Important)
 The config file is mounted on the host at `./config/go-proxy/` (inside the container: `/app/config.d/config.yaml`).
@@ -93,7 +98,7 @@ The config file is mounted on the host at `./config/go-proxy/` (inside the conta
 
 ## 💻 Hubcmd-UI
 
-**Default account**: root / admin@123
+**Default account**: root / admin@123   **Please change the default account and password promptly after deployment.**
 
 <br/>
 <table>
@@ -114,12 +119,20 @@ The config file is mounted on the host at `./config/go-proxy/` (inside the conta
         <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-registry-manager.png?raw=true"></td>
     </tr>
     <tr>
-      <td width="50%" align="center"><b>Container Management</b></td>
-      <td width="50%" align="center"><b>Monitoring & Alerting</b></td>
+      <td width="50%" align="center"><b>System Dashboard</b></td>
+      <td width="50%" align="center"><b>Traffic Monitoring</b></td>
     </tr>
     <tr>
-        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-docker-manager.png?raw=true"></td>
-        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-alter.png?raw=true"></td>
+        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmd-ui-dashboard.png?raw=true"></td>
+        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-Traffic.png?raw=true"></td>
+    </tr>
+    <tr>
+      <td width="50%" align="center"><b>Access Control</b></td>
+      <td width="50%" align="center"><b>Network Testing</b></td>
+    </tr>
+    <tr>
+        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmd-ui-ipaccess.png?raw=true"></td>
+        <td width="50%" align="center"><img src="https://cdn.jsdelivr.net/gh/dqzboy/Images/picture/hubcmdui-network-test.png?raw=true"></td>
     </tr>
 </table>
 

@@ -12,6 +12,7 @@ const si = require('systeminformation');
 si.currentLoad().catch(() => {});
 const database = require('../database/database');
 const logger = require('../logger');
+const { getNetworkCounters } = require('./systemService');
 
 // 单次采集间隔（毫秒）：30 秒。24h 约为 2880 行，SQLite 完全可承受。
 const DEFAULT_INTERVAL = 30 * 1000;
@@ -74,6 +75,25 @@ async function recordSnapshot() {
 }
 
 /**
+ * 采集并写入一条网络累计字节记录（用于历史吞吐曲线）。
+ */
+async function recordNetwork() {
+  try {
+    const c = await getNetworkCounters();
+    const ts = Date.now();
+    await database.run(
+      'INSERT INTO network_history (ts, rx_bytes, tx_bytes) VALUES (?, ?, ?)',
+      [ts, Math.round(c.rxBytes), Math.round(c.txBytes)]
+    );
+    // 控制表体积：与 metric_history 同样的 25h 保留窗口
+    const cut = ts - RETENTION;
+    await database.run('DELETE FROM network_history WHERE ts < ?', [cut]);
+  } catch (e) {
+    logger.error('写入网络快照失败:', e.message);
+  }
+}
+
+/**
  * 按时间窗查询历史指标点。
  * @param {number} fromTs 起始时间戳（毫秒）
  * @returns {Promise<Array<{ts:number, cpu:number, memory:number, disk:number}>>}
@@ -92,6 +112,23 @@ async function getHistory(fromTs) {
 }
 
 /**
+ * 按时间窗查询网络累计字节历史点（相邻点差分即得到每秒吞吐）。
+ * @param {number} fromTs 起始时间戳（毫秒）
+ * @returns {Promise<Array<{ts:number, rx_bytes:number, tx_bytes:number}>>}
+ */
+async function getNetworkHistory(fromTs) {
+  const rows = await database.all(
+    'SELECT ts, rx_bytes, tx_bytes FROM network_history WHERE ts >= ? ORDER BY ts ASC',
+    [fromTs]
+  );
+  return (rows || []).map(r => ({
+    ts: r.ts,
+    rx_bytes: Number(r.rx_bytes) || 0,
+    tx_bytes: Number(r.tx_bytes) || 0
+  }));
+}
+
+/**
  * 启动采集定时器（单例，重复调用不会叠加）。
  * @param {number} intervalMs 采集间隔，默认 30s
  */
@@ -99,8 +136,10 @@ function startCollector(intervalMs = DEFAULT_INTERVAL) {
   if (timer) return; // 已启动，避免重复
   // 启动时立即采集一次，避免首屏要等一个间隔
   recordSnapshot();
+  recordNetwork();
   timer = setInterval(() => {
     recordSnapshot();
+    recordNetwork();
   }, intervalMs);
   // 不阻止进程退出
   if (timer.unref) timer.unref();
@@ -121,7 +160,9 @@ function stopCollector() {
 module.exports = {
   collectSnapshot,
   recordSnapshot,
+  recordNetwork,
   getHistory,
+  getNetworkHistory,
   startCollector,
   stopCollector,
   RETENTION

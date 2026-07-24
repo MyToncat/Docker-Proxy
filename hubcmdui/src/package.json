@@ -19,6 +19,7 @@
     "marked": "^14.1.4",
     "md-editor-v3": "^4.21.3",
     "vue": "^3.4.31",
+    "vue-i18n": "^9.14.5",
     "vue-router": "^4.4.0"
   },
   "devDependencies": {

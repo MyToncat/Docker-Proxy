@@ -106,15 +106,6 @@ registerRoutes(app);
 // 提供兼容层以确保旧接口继续工作
 require('./compatibility-layer')(app);
 
-// 确保登录路由可用
-try {
-  const loginRouter = require('./routes/login');
-  app.use('/api', loginRouter);
-  logger.success('✓ 已添加备用登录路由');
-} catch (loginError) {
-  logger.error('无法加载备用登录路由:', loginError);
-}
-
 // 页面路由：统一返回 Vue 构建产物（web/dist/index.html）。
 // 旧的 jQuery 前端（web/index.html / web/admin.html / web/docs.html）已删除，
 // 未构建时不再回退到任何旧页面，而是返回 503 提示，由运维执行 `npm run build` 生成 web/dist。
