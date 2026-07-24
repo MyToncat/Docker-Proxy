@@ -120,6 +120,10 @@ export const saveGoConfig = (cfg) => api.put('/goProxy/config', cfg).then(r => r
 export const reloadGoProxy = () => api.post('/goProxy/reload').then(r => r.data)
 export const goProxyStatus = () => api.get('/goProxy/status').then(r => r.data)
 
+// ============ IP 访问控制（代理层） ============
+export const getIpAccess = () => api.get('/ipAccess').then(r => r.data)
+export const saveIpAccess = (cfg) => api.put('/ipAccess', cfg).then(r => r.data)
+
 // ============ 监控 ============
 export const getMonitoringConfig = () => api.get('/monitoring-config').then(r => r.data)
 export const saveMonitoringConfig = (cfg) =>

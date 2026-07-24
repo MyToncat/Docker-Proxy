@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
 
 // adminPasswordSentinel is the value the UI sends back when the password field
@@ -173,6 +175,9 @@ func validateConfig(cfg *Config) error {
 	if len(cfg.Registries) == 0 {
 		return fmt.Errorf("至少需要配置一个 registry")
 	}
+	if err := validateAccessControl(&cfg.AccessControl); err != nil {
+		return err
+	}
 	names := make(map[string]bool)
 	for _, r := range cfg.Registries {
 		if r.Name == "" {
@@ -198,6 +203,53 @@ func validateConfig(cfg *Config) error {
 		}
 	}
 	return nil
+}
+
+// validateAccessControl checks the IP allow/deny configuration. Invalid IPs or
+// CIDRs are rejected here so a bad rule can never fail silently (unlike the old
+// iptables batch apply, where one bad entry broke the whole batch).
+func validateAccessControl(ac *AccessControl) error {
+	switch ac.Mode {
+	case "", ACLModeOff, ACLModeWhitelist, ACLModeBlacklist:
+	default:
+		return fmt.Errorf("access_control.mode 非法: %q (应为 off / whitelist / blacklist)", ac.Mode)
+	}
+	if ac.Mode == ACLModeWhitelist && len(ac.Whitelist) == 0 {
+		return fmt.Errorf("白名单模式至少需要配置一个 IP/CIDR")
+	}
+	for _, e := range ac.Whitelist {
+		if err := checkIPRule(e); err != nil {
+			return err
+		}
+	}
+	for _, e := range ac.Blacklist {
+		if err := checkIPRule(e); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// checkIPRule validates a single allow/deny entry: a plain IP or a CIDR, with
+// an optional inline "# comment".
+func checkIPRule(raw string) error {
+	e := strings.TrimSpace(raw)
+	if e == "" {
+		return fmt.Errorf("存在空的 IP 规则")
+	}
+	if i := strings.IndexByte(e, '#'); i >= 0 {
+		e = strings.TrimSpace(e[:i])
+	}
+	if e == "" {
+		return nil
+	}
+	if _, _, err := net.ParseCIDR(e); err == nil {
+		return nil
+	}
+	if net.ParseIP(e) != nil {
+		return nil
+	}
+	return fmt.Errorf("非法的 IP/CIDR: %q", raw)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {

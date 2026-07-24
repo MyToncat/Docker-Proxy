@@ -98,7 +98,7 @@ import { useI18n } from 'vue-i18n'
 import {
   Odometer, Cpu, Connection, Document, Operation,
   Histogram, Monitor, User, SwitchButton,
-  Sunny, Moon, CaretBottom, Setting, DataLine
+  Sunny, Moon, CaretBottom, Setting, DataLine, Lock
 } from '@element-plus/icons-vue'
 import { getConfig, getUserInfo, logout, getSiteInfo } from '../services'
 import { useTheme } from '../composables/useTheme'
@@ -110,6 +110,7 @@ const nav = [
   { name: 'basic', title: '基本配置', icon: Setting },
   { name: 'docker', title: '容器管理', icon: Cpu },
   { name: 'goproxy', title: '代理管理', icon: Connection },
+  { name: 'ipaccess', title: 'IP 访问控制', icon: Lock },
   { name: 'documents', title: '文档管理', icon: Document },
   { name: 'menu', title: '菜单管理', icon: Operation },
   { name: 'network', title: '网络测试', icon: Histogram },

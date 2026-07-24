@@ -168,3 +168,4 @@ build-images.sh
 go-proxy/config.local.yaml
 .workb*
 hubcmdui/.workb*
+go-proxy/go-proxy

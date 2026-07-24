@@ -328,7 +328,9 @@ const serverForm = reactive({
   writeTimeout: 0,
   idleTimeout: 120,
   logLevel: 'normal',
-  registries: []
+  registries: [],
+  // 保留 IP 访问控制，避免保存代理设置时把它清空
+  accessControl: { mode: 'off', whitelist: [], blacklist: [] }
 })
 
 const loading = ref(false)
@@ -380,6 +382,13 @@ function applyConfig(c) {
   serverForm.idleTimeout = typeof s.idle_timeout === 'number' ? s.idle_timeout : 120
   serverForm.logLevel = c.log_level || 'normal'
   serverForm.default = c.default || ''
+  // 保留 IP 访问控制，避免保存代理设置时把它清空
+  const ac = c.access_control || {}
+  serverForm.accessControl = {
+    mode: ac.mode || 'off',
+    whitelist: Array.isArray(ac.whitelist) ? ac.whitelist : [],
+    blacklist: Array.isArray(ac.blacklist) ? ac.blacklist : []
+  }
   serverForm.registries = (Array.isArray(c.registries) ? c.registries : []).map(r => ({
     name: r.name || '',
     hosts: Array.isArray(r.hosts) ? r.hosts : [],
@@ -405,6 +414,12 @@ function buildPayload() {
     },
     default: serverForm.default,
     log_level: serverForm.logLevel,
+    // 携带 IP 访问控制，避免保存代理设置时把它清空
+    access_control: {
+      mode: serverForm.accessControl.mode || 'off',
+      whitelist: Array.isArray(serverForm.accessControl.whitelist) ? serverForm.accessControl.whitelist : [],
+      blacklist: Array.isArray(serverForm.accessControl.blacklist) ? serverForm.accessControl.blacklist : []
+    },
     registries: serverForm.registries.map(r => ({
       name: r.name,
       hosts: Array.isArray(r.hosts) ? r.hosts : [],
